@@ -78,8 +78,8 @@ public class MainActivity extends Activity {
         });
         
 		// INITIALIZE Arduino service
-		this.mArduinoS = new ArduinoService(this.mHandler);
-		//this.mArduinoS = new AudioArduinoService(this.mHandler);
+		//this.mArduinoS = new ArduinoService(this.mHandler);
+		this.mArduinoS = new AudioArduinoService(this.mHandler);
 	}
 
 	protected void onPause() {
