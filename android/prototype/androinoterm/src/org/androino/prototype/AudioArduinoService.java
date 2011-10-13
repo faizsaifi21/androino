@@ -17,6 +17,9 @@ public class AudioArduinoService extends ArduinoService {
 	private static final int GT540_SAMPLE_FREQ = 44100;
 	private static final int DEVEL_SAMPLE_FREQ = 8000;
 	private static final int AUDIO_SAMPLE_FREQ = DEVEL_SAMPLE_FREQ;
+	
+	public static int BAUD_RATE_SENDING=315;
+	public static int BAUD_RATE_RECEIVING=315;
 
 	private static final String TAG = "AudioArduinoService";
 	
