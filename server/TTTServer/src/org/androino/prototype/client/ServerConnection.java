@@ -17,6 +17,9 @@ public class ServerConnection extends Thread {
 	private TTTServer mClientHandler;
 	private boolean forceStop = false;
 	private String server = "http://androino-tic-tac-toe.appspot.com";
+	private static String	NEW_EVENT_CGI 			= "/new_event";
+	private static String	CHECK_EVENTS_CGI 		= "/check_events";
+	
 	private String user = null;
 
 	public ServerConnection(TTTServer handler) {
@@ -32,6 +35,7 @@ public class ServerConnection extends Thread {
 			try {
 				checkNewMessages();
 				Thread.sleep(1000*1);
+				//TTTServer.debugMessage("ServerConnection: loop");
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
@@ -39,7 +43,7 @@ public class ServerConnection extends Thread {
 	}
 	private void connect(){
 		try {
-			String url = this.server + "/newEvent?MSG=CONNECT";
+			String url = this.server + "/" + NEW_EVENT_CGI + "?MSG=CONNECT";
 			String content = getURLContent(url);
 			this.user = content;
 		} catch (IOException e) {
@@ -51,11 +55,12 @@ public class ServerConnection extends Thread {
 	
 	private void checkNewMessages(){
 		try {
-			String url = this.server + "/checkNewEvents?USER="+this.user;
+			String url = this.server + "/" + CHECK_EVENTS_CGI + "?USER="+this.user;
 			String content = getURLContent(url);
 			if (! content.startsWith("OK")){
 				this.mClientHandler.notifyEvent(content);
 			}
+			TTTServer.debugMessage("ServerConnection: content=" + content);
 		} catch (IOException e) {
 			this.mClientHandler.notifyEvent("ERROR:" + e.getMessage());
 			e.printStackTrace();
@@ -75,7 +80,7 @@ public class ServerConnection extends Thread {
 	}
 	
 	public void sentEvent(TTTEvent event){
-		String url = this.server + "/newEvent?USER=" + this.user + "&MSG=" + event.getMessage();
+		String url = this.server + "/" + NEW_EVENT_CGI + "?USER=" + this.user + "&MSG=" + event.getMessage();
 		try {
 			String content = getURLContent(url);
 		} catch (IOException e) {

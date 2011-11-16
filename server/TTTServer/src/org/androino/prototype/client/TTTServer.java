@@ -23,10 +23,11 @@ public class TTTServer implements iTTTEventListener{
 	}
 	
 	protected void notifyEvent(String eventMessage){
-		TTTEvent event = null;
+		TTTEvent event = TTTEvent.parseEvent(eventMessage);
 		if (this.listener !=null)
 			listener.eventReceived(event);
 	}
+	
 	
 	public void registerEventListener(iTTTEventListener listener){
 		// current implementation only allows a unique listener registration
@@ -37,18 +38,15 @@ public class TTTServer implements iTTTEventListener{
 	}
 
 	public void buttonClick(String buttonId){
-		TTTEvent event = new TTTEvent();
-		event.setType(TTTEvent.TYPE_BUTTON_CLICK);
+		TTTEvent event = new TTTEvent(TTTEvent.TYPE_BUTTON_CLICK, buttonId);
 		this.server.sentEvent(event);
 	}
 	public void startGameClick(){
-		TTTEvent event = new TTTEvent();
-		event.setType(TTTEvent.TYPE_STARTGAME_CLICK);
+		TTTEvent event = new TTTEvent(TTTEvent.TYPE_STARTGAME_CLICK, null);
 		this.server.sentEvent(event);
 	}
 	public void endGame(String result){
-		TTTEvent event = new TTTEvent();
-		event.setType(TTTEvent.TYPE_ENDGAME);
+		TTTEvent event = new TTTEvent(TTTEvent.TYPE_ENDGAME, result);
 		this.server.sentEvent(event);
 	}
 	
@@ -56,23 +54,33 @@ public class TTTServer implements iTTTEventListener{
 	
 	public static void main(String[] args){
 		TTTServer server = TTTServer.getInstance();
+		server.debugMessage("TTTServer instance");
 		server.registerEventListener(server);
 		server.start();
+		server.debugMessage("TTTServer start");
 		server.buttonClick("A3");
+		server.debugMessage("TTTServer button click");
+		try {
+			Thread.sleep(100*1000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		server.stop();
+		server.debugMessage("TTTServer stop");
 	}
 
 	public void eventReceived(TTTEvent event) {
 		debugMessage("Event received: " + event.toString() );
 		switch (event.getType()) {
 		case TTTEvent.TYPE_BUTTON_CLICK:
-			this.buttonClick( event.getMessage() + "A");
+			this.buttonClick( "345");
 			break;
 		default:
 			break;
 		}
 	}
-	private void debugMessage(String msg){
+	static void debugMessage(String msg){
 		System.out.println(">>" + msg);
 	}
 
