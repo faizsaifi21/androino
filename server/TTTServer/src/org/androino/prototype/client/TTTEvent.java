@@ -47,6 +47,9 @@ public class TTTEvent {
 		else if (message.startsWith("START")) t = TYPE_STARTGAME_CLICK;
 		else if (message.startsWith("DISCONNECT")) t = TYPE_DISCONNECT;
 		else if (message.startsWith("END_")) t = TYPE_ENDGAME;
+		int index = message.indexOf("_");
+		if (index > -1 )
+			message = message.substring(index+1, message.length() -index +1);
 		TTTEvent event = new TTTEvent(t,message);
 		return event;
 	}
