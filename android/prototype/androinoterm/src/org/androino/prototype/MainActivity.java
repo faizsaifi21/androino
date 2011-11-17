@@ -1,5 +1,7 @@
 package org.androino.prototype;
 
+import java.util.Date;
+
 import android.app.Activity;
 import android.media.AudioManager;
 import android.os.Bundle;
@@ -16,12 +18,15 @@ public class MainActivity extends Activity {
 
         private int mVolume = 0; //
         private ArduinoService mArduinoS = null;
+        
+        private long testLastToastTime = 0;
+        private long testCountMissingToast = 0;
 
         public MainActivity() {
                 this.mHandler = new Handler() {
                         public void handleMessage(Message msg) {
                                 messageReceived(msg);
-                                dummyMessageReceived(msg);
+                                //dummyMessageReceived(msg);
                         }
 
                 };
@@ -48,16 +53,27 @@ public class MainActivity extends Activity {
                 case ArduinoService.HANDLER_MSG_RECEIVED:
                         String str1 = Integer.toHexString(msg.arg1 & 0xFF);
                         Log.i("MainActivity:handleMessage", str1);
-                        Toast.makeText(getApplicationContext(), "handle message:" + msg.arg1, Toast.LENGTH_SHORT).show();
+                        showInfo("handle message:" + msg.arg1);
                         break;
                 case ArduinoService.HANDLER_MSG_STOPPED:
-                        Toast.makeText(getApplicationContext(), "STOP message:" + msg.arg1, Toast.LENGTH_SHORT).show();
+                        showInfo("STOP message:" + msg.arg1);
                         break;
                 default:
                         break;
                 }
                 
         }
+        private void showInfo(String message){
+        	// do not show a toast if a previous is still showing
+        	long time = new Date().getTime();
+        	if ( (time-this.testLastToastTime) > 2*1000) {
+        		Toast.makeText(getApplicationContext(), message + ":missing=" + testCountMissingToast, Toast.LENGTH_SHORT).show();
+        		this.testLastToastTime = time;
+        		this.testCountMissingToast = 0;
+        	}
+        	else testCountMissingToast++;
+        }
+        
         
         public void onCreate(Bundle savedInstanceState) {
                 Log.i("MainActivity:lifecycle", "onCreate");
