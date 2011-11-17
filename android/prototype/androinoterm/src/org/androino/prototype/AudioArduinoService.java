@@ -43,22 +43,6 @@ public class AudioArduinoService extends ArduinoService {
                 AudioRecord audioR = new AudioRecord(1, 44100, 2, m, j);
                 audioR.startRecording();
 */
-<<<<<<< .mine
-                this.forceStop = false;
-                // continuous loop
-                while (true) {
-                        // stop if requested
-                        if (this.forceStop) {
-//                              audioR.stop();
-//                              audioR.release();
-                                break;
-                        }
-                        // sound acquisition
-//                      int nBytes = audioR.read(audioData, 0, j);
-//                      analyzeSound(audioData, nBytes);
-                }
-        }
-=======
 		this.forceStop = false;
 		
 		testDecodeAmplitude();
@@ -76,7 +60,6 @@ public class AudioArduinoService extends ArduinoService {
 //			analyzeSound(audioData, nBytes);
 		}
 	}
->>>>>>> .r7
 
         private void analyzeSound(byte[] audioData, int nBytes) {
 
@@ -85,68 +68,11 @@ public class AudioArduinoService extends ArduinoService {
                 sendMessage(audioData.length, nBytes);
         }
 
-<<<<<<< .mine
-        public void write(String message) {
-                Log.i("ArduinoService::MSG", message);
-                //testRecordAudio();
-                testFrequency = testFrequency + 300;
-                if (testFrequency>3000) testFrequency = 400;
-=======
 	public void write(String message) {
 		Log.i("ArduinoService::MSG", message);
 		testRecordAudio();
 		//testFrequency = testFrequency + 300;
 		//if (testFrequency>3000) testFrequency = 400;
->>>>>>> .r7
-
-<<<<<<< .mine
-        }
-        public void stopAndClean(){
-                super.stopAndClean();
-                testPlayAudio();
-        }
-        
-        private byte[] generateTone(int frequency){
-                int duration = 1; //s
-                int samplingRate = 8000; //Hz
-                int numberOfSamples = duration * samplingRate;
-                double samplingTime = 1.0/samplingRate;
-                Log.i(TAG, "generateTone:samplingTime="+samplingTime);
-                ByteBuffer buf = ByteBuffer.allocate(4*numberOfSamples);
-                buf.order(ByteOrder.LITTLE_ENDIAN);
-                double amplitude = 10000.0;
-                double y = 0;
-                for (int i = 0; i < numberOfSamples; i++) {
-                        y  = amplitude *  Math.sin( 2 * Math.PI * frequency * i * samplingTime);
-                        try {
-                                //buf.putDouble(y);
-                                int yInt = (int) y;
-                                buf.putInt(yInt);
-                        } catch (Exception e) {
-                                Log.e(TAG, "generateTone:error i=" + i);
-                                e.printStackTrace();
-                                break;
-                        }
-                }
-                return buf.array();
-                
-        }
-        private void testPlayAudio(){
-                int AUDIO_BUFFER_SIZE = 16000;
-                int minBufferSize = AudioTrack.getMinBufferSize(AUDIO_SAMPLE_FREQ, 
-                                2, AudioFormat.ENCODING_PCM_16BIT);
-                if (AUDIO_BUFFER_SIZE < minBufferSize) AUDIO_BUFFER_SIZE = minBufferSize;
-                AudioTrack aT = new AudioTrack(AudioManager.STREAM_MUSIC, AUDIO_SAMPLE_FREQ, 
-                                AudioFormat.CHANNEL_CONFIGURATION_MONO, AudioFormat.ENCODING_PCM_16BIT,
-                                AUDIO_BUFFER_SIZE, AudioTrack.MODE_STREAM);
-                aT.play();
-                //int nBytes = aT.write(this.testAudioArray, 0, this.testAudioArray.length);
-                byte[] tone = generateTone(this.testFrequency);
-                int nBytes = aT.write(tone, 0, tone.length);
-                aT.stop();
-                aT.release();
-        }
-=======
 	}
 	public void stopAndClean(){
 		super.stopAndClean();
@@ -193,7 +119,6 @@ public class AudioArduinoService extends ArduinoService {
 		aT.stop();
 		aT.release();
 	}
->>>>>>> .r7
 
         private void testRecordAudio() {
                 int AUDIO_BUFFER_SIZE = 16000;
