@@ -1,6 +1,8 @@
 package org.androino.prototype;
 
 import java.io.*;
+import java.util.Iterator;
+import java.util.Vector;
 
 public class FSKModule {
 	
@@ -55,9 +57,55 @@ public class FSKModule {
 		}
 		return data;
 	}
+	private Vector<String> decodeBits(int[] bits){
+		// decodes the bits array and returns the messages
+		Vector<String> msgs = new Vector<String>();
+		decodeBits(bits,0,msgs);
+		return msgs;
+	}
+	private void decodeBits(int[] bits, int startIndex, Vector<String> messages){
+		// recursive decoding algorithm (finds start bit, get the message and call himself again)
+		try {
+			int index = findStartBit(bits, startIndex);
+			String message = "";
+			for (int i = 0; i < 8; i++) {
+				message += bits[index+i];
+			}
+			messages.add(message);
+			decodeBits(bits, index + 8 + 2, messages);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private int findStartBit(int[] bits, int startIndex){
+		// find carrier and start bit
+		int index = startIndex;
+		int highCounter = 0;
+		boolean startBitDetected = false;
+		do {
+			int bit = bits[index];
+			switch (bit) {
+			case 2:
+				highCounter++; // carrier high bit
+				break;
+			case 1:
+				if (highCounter>12) { // start-bit detected
+					startBitDetected = true;
+				}
+				else highCounter = 0; // reset carrier counter
+				break;
+			case 0:
+				highCounter = 0;// reset carrier counter
+				break;
+			}
+			index++;
+		} while (!startBitDetected);
+		return index;
+	}
 	
 	private int[] parseBits(int[] peaks){
-		// from the number of peaks array decode into bits
+		// from the number of peaks array decode into an array of bits (2=bit-1, 1=bit-0, 0=no bit)
 		// 
 		int i =0;
 		//int slots_per_bit = 4;
@@ -160,7 +208,7 @@ public class FSKModule {
 			File f = new File("./");
 			String path = f.getCanonicalPath();
 			debugInfo("working dir=" + path);
-			sound = m.readInfoFromFile("../testdata/sound.dat");
+			sound = m.readInfoFromFile("./testdata/sound.dat");
 			for (int i = 0; i < 10; i++) {
 				debugInfo("data:" + i + ":" + sound[i]);
 			}
@@ -169,15 +217,20 @@ public class FSKModule {
 			for (int i = 0; i < nPeaks.length; i++) {
 				debugInfo("nPeaks:" + i*N_POINTS + ":" + nPeaks[i]);
 			}
-			// 
+			// transform number of peaks into bits 
 			int[] bits = m.parseBits(nPeaks);
 			for (int i = 0; i < bits.length; i++) {
 				debugInfo("bits:" + i*N_POINTS*SLOTS_PER_BIT + ":" + bits[i]);
 			}
-			for (int i = 0; i < bits.length; i++) {
-				debugInfo("bits:" + i + ":" + bits[i]);
+			//for (int i = 0; i < bits.length; i++) {
+			//	debugInfo("bits:" + i + ":" + bits[i]);
+			//}
+			// decode bits array into messages
+			Vector<String> msgs = m.decodeBits(bits);
+			for (Iterator iterator = msgs.iterator(); iterator.hasNext();) {
+				String msg = (String) iterator.next();
+				debugInfo("msg="+ msg);
 			}
-			
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
