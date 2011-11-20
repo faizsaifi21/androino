@@ -58,13 +58,17 @@ public class FSKModule {
 		sound = concatenateArrays(sound,carrier);
 		debugInfo("encodeMessage: carrier: nsamples=" + carrier.length);
 		
-		// generate message bits
+		// generate message 
 		duration = SAMPLES_PER_BIT * SAMPLING_TIME;
+		// start-bit
 		double[] message = new double[0];
+		double[] bitArray = generateTone(FREQUENCY_LOW,duration);
+		message = concatenateArrays(message, bitArray);
+		// message bits
 		for (int i = 0; i < bits.length; i++) {
 			int freq = FREQUENCY_LOW;
-			if ( bits[i]>0) freq = FREQUENCY_HIGH;
-			double[] bitArray = generateTone(freq,duration);
+			if ( bits[i]>1) freq = FREQUENCY_HIGH;
+			bitArray = generateTone(freq,duration);
 			message = concatenateArrays(message, bitArray);
 		}
 		sound = concatenateArrays(sound,message);
@@ -296,16 +300,15 @@ public class FSKModule {
 			File f = new File("./");
 			String path = f.getCanonicalPath();
 			debugInfo("working dir=" + path);
-
-			int[] message = {1,0,0,1,1,0,0,1};
-			sound = m.encodeMessage(message);
-
-			//sound = m.readInfoFromFile("./testdata/sound.dat");
+			sound = m.readInfoFromFile("./testdata/sound.dat");
 			for (int i = 0; i < 10; i++) {
 				debugInfo("data:" + i + ":" + sound[i]);
 			}
+
+// -- Testing decoding calculation time
 //Date startD = new Date();
 //for (int k = 0; k < 1000; k++) {
+
 			// processing sound
 			int[] nPeaks = m.processSound(sound);
 			for (int i = 0; i < nPeaks.length; i++) {
@@ -325,20 +328,28 @@ public class FSKModule {
 				String msg = (String) iterator.next();
 				debugInfo("msg="+ msg);
 			}
-
-/*			
-			int[] message = {1,0,0,1,1,0,0,1};
-			sound = m.encodeMessage(message);
-			//for (int i = 0; i < sound.length; i++) {
-			//	debugInfo("data:" + i + ":" + (int)sound[i]);
-			//}
-			m.saveInfoToFile("./testdata/generated.dat", sound);
-*/
-			
 //}
 //Date endD = new Date();
 //System.out.println("calculation time=" + (endD.getTime()-startD.getTime()));
 // Testing the processing time it takes 0.7 milliseconds
+
+			// complete cycle: encode a message and then decode it.
+			int[] message = {1,1,1,1,1,1,2,2}; //(2=bit-1, 1=bit-0,
+			String msgText = "";
+			for (int i = 0; i < message.length; i++) {
+				msgText+= message[i];
+			}
+			debugInfo("encoded message=" + msgText);
+			double[] soundA = m.encodeMessage(message);
+			//m.saveInfoToFile("./testdata/generated.dat", soundA);
+			int[] nPeaksA = m.processSound(soundA);
+			int[] bitsA = m.parseBits(nPeaksA);
+			Vector<String> messages = m.decodeBits(bitsA);
+			for (Iterator iterator = messages.iterator(); iterator.hasNext();) {
+				String msg = (String) iterator.next();
+				debugInfo("msg="+ msg);
+			}
+			
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
