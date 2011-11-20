@@ -1,6 +1,11 @@
 package org.androino.prototype;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Vector;
 
@@ -8,9 +13,12 @@ public class FSKModule {
 	
 	private static int BUFFER_SIZE	= 30000;
 	private static int SAMPLING_FREQUENCY = 44100; //Hz
-	private static double SAMPLING_TIME = 1000.0/SAMPLING_FREQUENCY; //ms
-	
+	private static double SAMPLING_TIME = 1.0/SAMPLING_FREQUENCY; //ms
 
+	// reading zero+155(high)+1(low)+8bit+stop+end+zero
+	private static int FREQUENCY_HIGH = 3000;
+	private static int FREQUENCY_LOW = 1500;
+	
 	//high: 7 samples/peak
 	//low : 14 samples/peak
 	// 1492 samples/message low+8bits+stop+end 
@@ -35,6 +43,86 @@ public class FSKModule {
 	private static void debugInfo(String message){
 		System.out.println(">>" + message);
 	}
+
+	private double[] encodeMessage(int[]bits){
+		// reading zero+155(high)+1(low)+8bit+stop+end+zero
+		double[] sound = new double[0];
+		//generate zeros
+		double[] zeros = new double[10*SAMPLES_PER_BIT];
+		sound = concatenateArrays(sound,zeros);
+		debugInfo("encodeMessage: zeros: nsamples=" + zeros.length);
+		
+		// generate carrier
+		double duration = 155*SAMPLES_PER_BIT * SAMPLING_TIME;
+		double[] carrier = this.generateTone(FREQUENCY_HIGH, duration);
+		sound = concatenateArrays(sound,carrier);
+		debugInfo("encodeMessage: carrier: nsamples=" + carrier.length);
+		
+		// generate message bits
+		duration = SAMPLES_PER_BIT * SAMPLING_TIME;
+		double[] message = new double[0];
+		for (int i = 0; i < bits.length; i++) {
+			int freq = FREQUENCY_LOW;
+			if ( bits[i]>0) freq = FREQUENCY_HIGH;
+			double[] bitArray = generateTone(freq,duration);
+			message = concatenateArrays(message, bitArray);
+		}
+		sound = concatenateArrays(sound,message);
+		debugInfo("encodeMessage: message: nsamples=" + message.length);
+		
+		// generate stop+end
+		duration = duration*2;
+		double[] end = generateTone(FREQUENCY_HIGH, duration);
+		sound = concatenateArrays(sound,end);
+		debugInfo("encodeMessage: end: nsamples=" + end.length);
+		
+		// zeros
+		sound = concatenateArrays(sound,zeros);
+		debugInfo("encodeMessage: sount total: nsamples=" + sound.length);
+		return sound;
+	}
+	private double[] concatenateArrays(double[] a1, double[] a2){
+		double[] data = new double[a1.length+a2.length];
+		for (int i = 0; i < a1.length; i++) {
+			data[i] = a1[i];
+		}
+		for (int i = 0; i < a2.length; i++) {
+			data[i + a1.length] = a2[i];
+		}
+		return data;
+	}
+	
+	private double[] generateTone(int frequency, double duration){
+		//int duration = 1; // s
+		int samplingRate = 44100; // Hz
+		int numberOfSamples = (int)(duration * samplingRate);
+		double samplingTime = 1.0 / samplingRate;
+		
+		double[] tone = new double[numberOfSamples];
+		
+		double amplitude = 10000.0;
+		for (int i = 0; i < numberOfSamples; i++) {
+			double y = Math.sin(2 * Math.PI * frequency * i * samplingTime);
+			tone[i] = y * amplitude;
+		}
+		return tone;
+	}
+	
+	private void saveInfoToFile(String filePath, double[] data){
+		String content = "";
+		for (int i = 0; i < data.length; i++) {
+			content+= ((int)data[i]) + "\n";
+		}
+        FileWriter fw;
+		try {
+			fw = new FileWriter(filePath, false);
+	        fw.append(content);
+	        fw.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
 	
 	private double[] readInfoFromFile(String filePath){
 		double[] data = new double[BUFFER_SIZE];
@@ -208,10 +296,16 @@ public class FSKModule {
 			File f = new File("./");
 			String path = f.getCanonicalPath();
 			debugInfo("working dir=" + path);
-			sound = m.readInfoFromFile("./testdata/sound.dat");
+
+			int[] message = {1,0,0,1,1,0,0,1};
+			sound = m.encodeMessage(message);
+
+			//sound = m.readInfoFromFile("./testdata/sound.dat");
 			for (int i = 0; i < 10; i++) {
 				debugInfo("data:" + i + ":" + sound[i]);
 			}
+//Date startD = new Date();
+//for (int k = 0; k < 1000; k++) {
 			// processing sound
 			int[] nPeaks = m.processSound(sound);
 			for (int i = 0; i < nPeaks.length; i++) {
@@ -231,6 +325,20 @@ public class FSKModule {
 				String msg = (String) iterator.next();
 				debugInfo("msg="+ msg);
 			}
+
+/*			
+			int[] message = {1,0,0,1,1,0,0,1};
+			sound = m.encodeMessage(message);
+			//for (int i = 0; i < sound.length; i++) {
+			//	debugInfo("data:" + i + ":" + (int)sound[i]);
+			//}
+			m.saveInfoToFile("./testdata/generated.dat", sound);
+*/
+			
+//}
+//Date endD = new Date();
+//System.out.println("calculation time=" + (endD.getTime()-startD.getTime()));
+// Testing the processing time it takes 0.7 milliseconds
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
