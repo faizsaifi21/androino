@@ -9,6 +9,7 @@ import android.util.Log;
 
 public class FSKDecoder extends Thread {
 
+	private boolean forceStop;
 	private Handler mClientHandler;
 	private Vector<byte[]> mSound; 
 	private static String TAG = "FSKDecoder";
@@ -16,13 +17,16 @@ public class FSKDecoder extends Thread {
 	public FSKDecoder(Handler handler){
 		this.mClientHandler = handler;
 		this.mSound = new Vector<byte[]>();
+		this.forceStop = false;
 	}
 
 	public void run() {
-		while (true) {
+		
+		while (!this.forceStop) {
+			
 			try {
 				if (soundAvailable()){
-					analizeSound();
+					decodeSound();
 				} else
 				Thread.sleep(1000*1);
 			} catch (InterruptedException e) {
@@ -32,12 +36,18 @@ public class FSKDecoder extends Thread {
 		}
 
 	}
+	public synchronized void stopAndClean(){
+		Log.i(TAG, "stopAndClean()");
+		this.forceStop = true;
+	}
+	
 	private synchronized boolean soundAvailable(){
 		if (this.mSound.size()>0) return true;
 		else return false;
 	}
 	
 	public synchronized void addSound(byte[] sound, int nBytes){
+		Log.i(TAG, "addSound nBytes="+ nBytes);
 		byte[] data = new byte[nBytes];
 		for (int i = 0; i < nBytes; i++) {
 			data[i] = sound[i];
@@ -78,12 +88,33 @@ public class FSKDecoder extends Thread {
 		
 	}
 	
-	private void analizeSound(){
+	private void decodeSound(){
 		byte[] sound = consumeSound();
 		Log.i(TAG, "analizeSound: length=" + sound.length);
-		this.decodeAmplitude(sound, sound.length);
+		//this.decodeAmplitude(sound, sound.length);
+		this.decodeFSK(sound);
+	}
+	
+	private void decodeFSK(byte[] audioData) {
+		try {
+			double[] sound = byte2double(audioData);
+			int message = FSKModule.decodeSound(sound);
+			Log.d(TAG, "decodeFSK():message=" + message);
+			if (message >0)
+			this.mClientHandler.obtainMessage(ArduinoService.HANDLER_MSG_RECEIVED, message, 0).sendToTarget();
+		} 
+		catch (AndroinoException ae){
+			Log.e(TAG, "decodeFSK:Androino ERROR="+ ae.getMessage());
+			this.mClientHandler.obtainMessage(ArduinoService.HANDLER_MSG_RECEIVED, -1, 0).sendToTarget();
+		}
+		catch (Exception e) {
+			this.mClientHandler.obtainMessage(ArduinoService.HANDLER_MSG_RECEIVED, -2, 0).sendToTarget();
+			Log.e(TAG, "decodeFSK:ERROR="+ e.getMessage(), e);
+		}
 	}
 
+	
+	
 	private double decodeAmplitude(byte[] audioData, int nBytes) {
 		double volume = 0;
 		ByteBuffer buf = ByteBuffer.wrap(audioData, 0, nBytes);

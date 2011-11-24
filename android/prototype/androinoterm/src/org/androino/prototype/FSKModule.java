@@ -35,6 +35,12 @@ public class FSKModule {
 	
 	private static double PEAK_AMPLITUDE_TRESHOLD = 5000; // significative sample (not noise)
 	private static int NUMBER_SAMPLES_PEAK = 3;			// minimum number of significative samples to be considered a peak
+
+	private static final int BIT_HIGH_SYMBOL=2;
+	private static final int BIT_LOW_SYMBOL=1;
+	private static final int BIT_NONE_SYMBOL=0;
+	
+	private static final int CARRIER_MIN_HIGH_BITS=12;
 	
 	private FSKModule(){
 		
@@ -169,6 +175,24 @@ public class FSKModule {
 			e.printStackTrace();
 		}
 	}
+	
+	private int decodeUniqueMessage(int[] bits){
+		// start bit
+		int index = findStartBit(bits, 0);
+		if (index == -1) return -1; // no start-bit detected
+		if (index + 8 + 2 > bits.length)
+			throw new AndroinoException("Message cutted, start bit at " + index, AndroinoException.TYPE_FSK_DECODING_ERROR);
+		
+		// 8bits message
+		int value = 0;
+		for (int i = 0; i < 8; i++) {
+			int bit = bits[index+i];
+			if (bit==BIT_HIGH_SYMBOL) value+=Math.pow(2, i);
+		}
+		// stop bit: do nothing
+		// end bit: do nothing
+		return value;
+	}
 
 	private int findStartBit(int[] bits, int startIndex){
 		// find carrier and start bit
@@ -178,20 +202,21 @@ public class FSKModule {
 		do {
 			int bit = bits[index];
 			switch (bit) {
-			case 2:
+			case BIT_HIGH_SYMBOL:
 				highCounter++; // carrier high bit
 				break;
-			case 1:
-				if (highCounter>12) { // start-bit detected
+			case BIT_LOW_SYMBOL:
+				if (highCounter>CARRIER_MIN_HIGH_BITS) { // start-bit detected
 					startBitDetected = true;
 				}
 				else highCounter = 0; // reset carrier counter
 				break;
-			case 0:
+			case BIT_NONE_SYMBOL:
 				highCounter = 0;// reset carrier counter
 				break;
 			}
 			index++;
+			if (index>=bits.length) return -1; 
 		} while (!startBitDetected);
 		return index;
 	}
@@ -203,8 +228,10 @@ public class FSKModule {
 		//int slots_per_bit = 4;
 		int nBits = peaks.length /SLOTS_PER_BIT;
 		int[] bits = new int[nBits];
-		i = findNextZero(peaks,i);
+		//i = findNextZero(peaks,i); // do not search for silence
 		i = findNextNonZero(peaks,i);
+		if (i+ SLOTS_PER_BIT >= peaks.length) //non-zero not found
+			return bits;
 		do {
 			//int nPeaks = peaks[i]+peaks[i+1]+peaks[i+2]+peaks[i+3];
 			int nPeaks = 0;
@@ -212,10 +239,10 @@ public class FSKModule {
 				nPeaks+= peaks[i+j];
 			}
 			int position = i/SLOTS_PER_BIT;
-			bits[position] = 0;
+			bits[position] = BIT_NONE_SYMBOL;
 			
-			if (nPeaks>LOW_BIT_N_PEAKS-2) bits[position] = 1;
-			if (nPeaks>LOW_BIT_N_PEAKS+4) bits[position] = 2;
+			if (nPeaks>LOW_BIT_N_PEAKS-2) bits[position] = BIT_LOW_SYMBOL;
+			if (nPeaks>LOW_BIT_N_PEAKS+4) bits[position] = BIT_HIGH_SYMBOL;
 			//if (nPeaks>5) bits[position] = 1;
 			//if (nPeaks>12) bits[position] = 2;
 			i=i+SLOTS_PER_BIT;
@@ -229,7 +256,7 @@ public class FSKModule {
 		do {
 			value = peaks[index];
 			index++;
-		} while (value==0);
+		} while (value==0 && index<peaks.length-1);
 		return index-1;
 	}
 
@@ -240,7 +267,7 @@ public class FSKModule {
 		do {
 			value = peaks[index];
 			index++;
-		} while (value!=0);
+		} while (value!=0 && index<peaks.length-1);
 		return index-1;
 	}
 	
@@ -290,6 +317,17 @@ public class FSKModule {
 		return signChangeCounter;
 	}
 	
+	public static int decodeSound(double[] sound){
+		FSKModule m = new FSKModule();
+		// processing sound in parts and 
+		int[] nPeaks = m.processSound(sound);
+		// transform number of peaks into bits 
+		int[] bits = m.parseBits(nPeaks);
+		// extract message from the bit array
+		int message = m.decodeUniqueMessage(bits);
+		return message;
+	}
+	
 	
 	public static void main(String[] args){
 		FSKModule m = new FSKModule();
@@ -300,7 +338,7 @@ public class FSKModule {
 			File f = new File("./");
 			String path = f.getCanonicalPath();
 			debugInfo("working dir=" + path);
-			sound = m.readInfoFromFile("./testdata/sound.dat");
+			sound = m.readInfoFromFile("../testdata/sound.dat");
 			for (int i = 0; i < 10; i++) {
 				debugInfo("data:" + i + ":" + sound[i]);
 			}

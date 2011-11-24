@@ -42,6 +42,7 @@ public class AudioArduinoService extends ArduinoService {
 		//testDecodeAmplitude();
 		testDecode();
 		
+
 		
 		// continuous loop
 		while (true) {
@@ -64,17 +65,19 @@ public class AudioArduinoService extends ArduinoService {
 
 	public void write(String message) {
 		Log.i("ArduinoService::MSG", message);
-		testRecordAudio();
+		//testRecordAudio();
 		// testFrequency = testFrequency + 300;
 		// if (testFrequency>3000) testFrequency = 400;
 	}
 
 	public void stopAndClean() {
+		Log.i(TAG,"stopAndClean");
+		this.mDecoder.stopAndClean();
 		super.stopAndClean();
 		
 		// use this code to generate a pure tone
 		// this.testAudioArray = this.generateTone(667);
-		testPlayAudio();
+		//testPlayAudio();
 	}
 
 	
@@ -370,6 +373,7 @@ public class AudioArduinoService extends ArduinoService {
 		while (true) {
 			counter++;
 			nBytes = aR.read(audioData, index, AUDIO_BUFFER_SIZE);
+			Log.d(TAG, "testDecode():audio acq: length=" + nBytes);
 			// Log.v(TAG, "nBytes=" + nBytes);
 			if (nBytes < 0) {
 				Log.e(TAG, "read error=" + nBytes);
