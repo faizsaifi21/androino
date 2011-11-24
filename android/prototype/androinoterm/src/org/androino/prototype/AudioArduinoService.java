@@ -16,7 +16,7 @@ public class AudioArduinoService extends ArduinoService {
 
 	private static final int GT540_SAMPLE_FREQ = 44100;
 	private static final int DEVEL_SAMPLE_FREQ = 8000;
-	private static final int AUDIO_SAMPLE_FREQ = GT540_SAMPLE_FREQ;
+	private static final int AUDIO_SAMPLE_FREQ = DEVEL_SAMPLE_FREQ;
 
 	public static int BAUD_RATE_SENDING = 315;
 	public static int BAUD_RATE_RECEIVING = 315;
@@ -65,6 +65,7 @@ public class AudioArduinoService extends ArduinoService {
 
 	public void write(String message) {
 		Log.i("ArduinoService::MSG", message);
+		this.testEncode();
 		//testRecordAudio();
 		// testFrequency = testFrequency + 300;
 		// if (testFrequency>3000) testFrequency = 400;
@@ -108,6 +109,35 @@ public class AudioArduinoService extends ArduinoService {
 
 	}
 
+	private void testEncode() {
+		int AUDIO_BUFFER_SIZE = 16000;
+		int minBufferSize = AudioTrack.getMinBufferSize(AUDIO_SAMPLE_FREQ, 2,
+				AudioFormat.ENCODING_PCM_16BIT);
+		if (AUDIO_BUFFER_SIZE < minBufferSize)
+			AUDIO_BUFFER_SIZE = minBufferSize;
+		AudioTrack aT = new AudioTrack(AudioManager.STREAM_MUSIC,
+				AUDIO_SAMPLE_FREQ, AudioFormat.CHANNEL_CONFIGURATION_MONO,
+				AudioFormat.ENCODING_PCM_16BIT, AUDIO_BUFFER_SIZE,
+				AudioTrack.MODE_STREAM);
+		aT.play();
+		//byte[] tone = generateTone(1000);
+		int[] bits = {2,1,1,1,2,2,1,1};
+		double[] sound = FSKModule.encode(bits);
+		Log.i(TAG, "testEncode() sound lenght=" + sound.length);
+		ByteBuffer buf = ByteBuffer.allocate(4 * sound.length);
+		buf.order(ByteOrder.LITTLE_ENDIAN);
+		for (int i = 0; i < sound.length; i++) {
+			int yInt = (int) sound[i];
+			buf.putInt(yInt);
+		}
+		byte[] tone = buf.array();
+		
+		int nBytes = aT.write(tone, 0, tone.length);
+		aT.stop();
+		aT.release();
+	}
+
+	
 	private void testPlayAudio() {
 		int AUDIO_BUFFER_SIZE = 16000;
 		int minBufferSize = AudioTrack.getMinBufferSize(AUDIO_SAMPLE_FREQ, 2,

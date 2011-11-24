@@ -50,6 +50,11 @@ public class FSKModule {
 		System.out.println(">>" + message);
 	}
 
+	public static double[] encode(int[] bits){
+		FSKModule m = new FSKModule();
+		return m.encodeMessage(bits);
+	}
+	                     
 	private double[] encodeMessage(int[]bits){
 		// reading zero+155(high)+1(low)+8bit+stop+end+zero
 		double[] sound = new double[0];
