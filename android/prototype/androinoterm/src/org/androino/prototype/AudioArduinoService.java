@@ -29,16 +29,20 @@ public class AudioArduinoService extends ArduinoService {
 	private byte[] testAudioArray;
 	private int testFrequency = 400;
 	private int globalCounter = 0;
+	private FSKDecoder mDecoder;
 	
 	public AudioArduinoService(Handler handler) {
 		super(handler);
 	}
-
+	
+	
 	public void run() {
 		this.forceStop = false;
 
 		//testDecodeAmplitude();
-
+		testDecode();
+		
+		
 		// continuous loop
 		while (true) {
 			// stop if requested
@@ -120,6 +124,34 @@ public class AudioArduinoService extends ArduinoService {
 		aT.release();
 	}
 
+	private byte[] removed_newAudioDataBuffer(){
+		int AUDIO_BUFFER_SIZE = 16000;
+		int minBufferSize = AudioTrack.getMinBufferSize(AUDIO_SAMPLE_FREQ, 2,
+				AudioFormat.ENCODING_PCM_16BIT);
+		if (AUDIO_BUFFER_SIZE < minBufferSize)
+			AUDIO_BUFFER_SIZE = minBufferSize;
+
+		Log.i(TAG, "buffer size:" + AUDIO_BUFFER_SIZE);
+		byte[] audioData = new byte[AUDIO_BUFFER_SIZE];
+		return audioData;
+	}
+	
+	private int removed_recordAudio(byte[] audioData) {
+		int AUDIO_BUFFER_SIZE = audioData.length;
+		// appendDebugInfo("BufferSize", "" + AUDIO_BUFFER_SIZE);
+		AudioRecord aR = new AudioRecord(MediaRecorder.AudioSource.MIC,
+				AUDIO_SAMPLE_FREQ, 2, AudioFormat.ENCODING_PCM_16BIT,
+				AUDIO_BUFFER_SIZE);
+
+		// audio recording
+		aR.startRecording();
+		int nBytes = aR.read(audioData, 0, AUDIO_BUFFER_SIZE);
+		aR.stop();
+		aR.release();
+		Log.i(TAG, "audio recording stoped");
+		return nBytes;
+	}
+	
 	private void testRecordAudio() {
 		int AUDIO_BUFFER_SIZE = 16000;
 		int minBufferSize = AudioTrack.getMinBufferSize(AUDIO_SAMPLE_FREQ, 2,
@@ -309,4 +341,52 @@ public class AudioArduinoService extends ArduinoService {
 		return frequency;
 	}
 
+	private void testDecode() {
+		this.mDecoder = new FSKDecoder(this.mClientHandler);
+		this.mDecoder.start();
+		
+		int AUDIO_BUFFER_SIZE = 4000;// 16000;
+		int minBufferSize = AudioTrack.getMinBufferSize(AUDIO_SAMPLE_FREQ, 2,
+				AudioFormat.ENCODING_PCM_16BIT);
+		if (AUDIO_BUFFER_SIZE < minBufferSize)
+			AUDIO_BUFFER_SIZE = minBufferSize;
+
+		Log.i(TAG, "buffer size:" + AUDIO_BUFFER_SIZE);
+		byte[] audioData = new byte[AUDIO_BUFFER_SIZE];
+
+		// appendDebugInfo("BufferSize", "" + AUDIO_BUFFER_SIZE);
+		AudioRecord aR = new AudioRecord(MediaRecorder.AudioSource.MIC,
+				AUDIO_SAMPLE_FREQ, 2, AudioFormat.ENCODING_PCM_16BIT,
+				AUDIO_BUFFER_SIZE);
+
+		// audio recording
+		aR.startRecording();
+		int nBytes = 0;
+		int index = 0;
+		int counter = 0;
+		this.forceStop = false;
+		// continuous loop
+		String message = "";
+		while (true) {
+			counter++;
+			nBytes = aR.read(audioData, index, AUDIO_BUFFER_SIZE);
+			// Log.v(TAG, "nBytes=" + nBytes);
+			if (nBytes < 0) {
+				Log.e(TAG, "read error=" + nBytes);
+				break; // error happened
+			}
+			this.mDecoder.addSound(audioData, nBytes);
+			
+			//double frequency = decodeFrequency(audioData, nBytes);
+			//Log.i(TAG, "freq=" + frequency + "Hz");
+
+			if (this.forceStop) {
+				break;
+			}
+		}
+		aR.stop();
+		aR.release();
+		Log.i(TAG, "audio recording stoped");
+	}
+	
 }

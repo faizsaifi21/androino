@@ -8,7 +8,7 @@ public class ArduinoService implements Runnable {
 	public static final int HANDLER_MSG_RECEIVED = 1;
 	public static final int HANDLER_MSG_STOPPED = 2;
 
-	private Handler mClientHandler;
+	protected Handler mClientHandler;
 	private int mCounter =0;
 	protected boolean forceStop = false;
 
