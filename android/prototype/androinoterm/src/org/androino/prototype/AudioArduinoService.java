@@ -16,7 +16,7 @@ public class AudioArduinoService extends ArduinoService {
 
 	private static final int GT540_SAMPLE_FREQ = 44100;
 	private static final int DEVEL_SAMPLE_FREQ = 8000;
-	private static final int AUDIO_SAMPLE_FREQ = DEVEL_SAMPLE_FREQ;
+	private static final int AUDIO_SAMPLE_FREQ = GT540_SAMPLE_FREQ;
 
 	public static int BAUD_RATE_SENDING = 315;
 	public static int BAUD_RATE_RECEIVING = 315;
@@ -40,9 +40,15 @@ public class AudioArduinoService extends ArduinoService {
 		this.forceStop = false;
 
 		//testDecodeAmplitude();
-		testDecode();
+		//testDecode();
 		
-
+		// do nothing loop to avoid thread finalization
+		try {
+			Thread.sleep(5000 * 1);
+		} catch (InterruptedException e) {
+			Log.e("FSKDecoder:run", "error", e);
+			e.printStackTrace();
+		}
 		
 		// continuous loop
 		while (true) {
@@ -77,7 +83,7 @@ public class AudioArduinoService extends ArduinoService {
 		super.stopAndClean();
 		
 		// use this code to generate a pure tone
-		// this.testAudioArray = this.generateTone(667);
+		//this.testAudioArray = this.generateTone(667);
 		//testPlayAudio();
 	}
 
@@ -90,7 +96,8 @@ public class AudioArduinoService extends ArduinoService {
 		Log.i(TAG, "generateTone:samplingTime=" + samplingTime);
 		ByteBuffer buf = ByteBuffer.allocate(4 * numberOfSamples);
 		buf.order(ByteOrder.LITTLE_ENDIAN);
-		double amplitude = 10000.0;
+		
+		double amplitude = 30000.0; // max amplitude 32768
 		double y = 0;
 		for (int i = 0; i < numberOfSamples; i++) {
 			y = amplitude

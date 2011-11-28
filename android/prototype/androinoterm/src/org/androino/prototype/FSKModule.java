@@ -16,14 +16,16 @@ public class FSKModule {
 	private static double SAMPLING_TIME = 1.0/SAMPLING_FREQUENCY; //ms
 
 	// reading zero+155(high)+1(low)+8bit+stop+end+zero
-	private static int FREQUENCY_HIGH = 3000;
-	private static int FREQUENCY_LOW = 1500;
+	private static int FREQUENCY_HIGH = 3150;
+	private static int FREQUENCY_LOW = 1575;
 	
 	//high: 7 samples/peak
 	//low : 14 samples/peak
 	// 1492 samples/message low+8bits+stop+end 
 	// 136 samples/bit  (=1492/11)
 	private static int SAMPLES_PER_BIT = 136;
+	
+	private static int ENCODING_SAMPLES_PER_BIT = SAMPLES_PER_BIT/2; // 68
 
 	// bit-high = 22 peaks
 	// bit-low = 6 peaks
@@ -42,6 +44,8 @@ public class FSKModule {
 	
 	private static final int CARRIER_MIN_HIGH_BITS=12;
 	
+	private static final int SOUND_AMPLITUDE = 31000;
+	
 	private FSKModule(){
 		
 	}
@@ -59,18 +63,18 @@ public class FSKModule {
 		// reading zero+155(high)+1(low)+8bit+stop+end+zero
 		double[] sound = new double[0];
 		//generate zeros
-		double[] zeros = new double[10*SAMPLES_PER_BIT];
+		double[] zeros = new double[10*ENCODING_SAMPLES_PER_BIT];
 		sound = concatenateArrays(sound,zeros);
 		debugInfo("encodeMessage: zeros: nsamples=" + zeros.length);
 		
 		// generate carrier
-		double duration = 155*SAMPLES_PER_BIT * SAMPLING_TIME;
-		double[] carrier = this.generateTone(FREQUENCY_HIGH, duration);
+		double duration = 28*ENCODING_SAMPLES_PER_BIT * SAMPLING_TIME; //experimental adjustment carrier duration = 28 bits 
+		double[] carrier = generateTone(FREQUENCY_HIGH, duration);
 		sound = concatenateArrays(sound,carrier);
 		debugInfo("encodeMessage: carrier: nsamples=" + carrier.length);
 		
 		// generate message 
-		duration = SAMPLES_PER_BIT * SAMPLING_TIME;
+		duration = ENCODING_SAMPLES_PER_BIT * SAMPLING_TIME;
 		// start-bit
 		double[] message = new double[0];
 		double[] bitArray = generateTone(FREQUENCY_LOW,duration);
@@ -112,13 +116,13 @@ public class FSKModule {
 		int samplingRate = 44100; // Hz
 		int numberOfSamples = (int)(duration * samplingRate);
 		double samplingTime = 1.0 / samplingRate;
+		samplingTime = 2* samplingTime ;
 		
 		double[] tone = new double[numberOfSamples];
 		
-		double amplitude = 10000.0;
 		for (int i = 0; i < numberOfSamples; i++) {
 			double y = Math.sin(2 * Math.PI * frequency * i * samplingTime);
-			tone[i] = y * amplitude;
+			tone[i] = y * SOUND_AMPLITUDE;
 		}
 		return tone;
 	}
