@@ -3,6 +3,7 @@ package org.androino.prototype;
 public class AndroinoException extends RuntimeException {
 
 	public static final int TYPE_FSK_DECODING_ERROR = 0;
+	public static final int TYPE_FSK_DEBUG = 1;
 	
 	private int type;
 	

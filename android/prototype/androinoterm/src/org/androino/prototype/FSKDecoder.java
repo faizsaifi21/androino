@@ -9,6 +9,8 @@ import android.util.Log;
 
 public class FSKDecoder extends Thread {
 
+	private static int MINIMUM_BUFFER = 4;
+	
 	private boolean forceStop;
 	private Handler mClientHandler;
 	private Vector<byte[]> mSound; 
@@ -42,7 +44,7 @@ public class FSKDecoder extends Thread {
 	}
 	
 	private synchronized boolean soundAvailable(){
-		if (this.mSound.size()>0) return true;
+		if (this.mSound.size()>=MINIMUM_BUFFER) return true;
 		else return false;
 	}
 	
@@ -72,21 +74,41 @@ public class FSKDecoder extends Thread {
 		this.mSound.clear();
 		return sound;
 	}
+	private void saveAudioToFile(String header, byte[] audioData) {
+		ByteBuffer buf = ByteBuffer.wrap(audioData, 0, audioData.length);
+		buf.order(ByteOrder.LITTLE_ENDIAN);
+		StringBuffer strB = new StringBuffer(header);
+		int counter = 0;
+		while (buf.remaining() >= 2) {
+			counter++;
+			//short s = buf.getShort();
+			double mono =buf.getShort();
+			strB.append(mono);
+			strB.append("\n");
+		}
+		Utility.writeToFile(strB.toString());
+	}
 
 	private double[] byte2double(byte[] data){
 		double d[] = new double[data.length];
+		String header="DATA:";
+		//saveAudioToFile(header, data);
+		
 		ByteBuffer buf = ByteBuffer.wrap(data, 0, data.length);
 		buf.order(ByteOrder.LITTLE_ENDIAN);
 		int counter = 0;
 		while (buf.remaining() >= 2) {
-			short s = buf.getShort();
-			double value = (double) s;
-			d[counter] = value;
+			
+			double s = buf.getShort();
+			
+			d[counter] = s;
 			counter++;
 		}
+				
 		return d;
 		
 	}
+	
 	
 	private void decodeSound(){
 		byte[] sound = consumeSound();
@@ -96,14 +118,30 @@ public class FSKDecoder extends Thread {
 	}
 	
 	private void decodeFSK(byte[] audioData) {
+		double[] sound = byte2double(audioData);
+		
+		Log.w(TAG, "decodeFSK: bytes length=" + audioData.length);
+		Log.w(TAG, "decodeFSK: doubles length=" + sound.length);
 		try {
-			double[] sound = byte2double(audioData);
 			int message = FSKModule.decodeSound(sound);
 			Log.d(TAG, "decodeFSK():message=" + message);
 			if (message >0)
 			this.mClientHandler.obtainMessage(ArduinoService.HANDLER_MSG_RECEIVED, message, 0).sendToTarget();
 		} 
 		catch (AndroinoException ae){
+			
+			if (ae.getType() == AndroinoException.TYPE_FSK_DEBUG){
+				Log.w(TAG, "byte:" + "Position"+ ":"+ "byte"+":"+"toString(b)" + ":" +  "Integer.toBinaryString" + ":" + "Integer.toHexString");
+				/*for (int i = 0; i <1500; i++) {
+					byte b = audioData[i];
+					Log.w(TAG, "byte:" + i+ ":"+ b+":"+Byte.toString(b) + ":" +  Integer.toBinaryString((int)b) + ":" + Integer.toHexString(b));
+				}
+				for (int i = 0; i < 8000; i++) {
+					Log.w(TAG, "sound:" + i+ ":"+ sound[i]);
+			
+				}
+			*/}
+			
 			Log.e(TAG, "decodeFSK:Androino ERROR="+ ae.getMessage());
 			this.mClientHandler.obtainMessage(ArduinoService.HANDLER_MSG_RECEIVED, -1, 0).sendToTarget();
 		}

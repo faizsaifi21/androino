@@ -40,15 +40,8 @@ public class AudioArduinoService extends ArduinoService {
 		this.forceStop = false;
 
 		//testDecodeAmplitude();
-		//testDecode();
+		testDecode();
 		
-		// do nothing loop to avoid thread finalization
-		try {
-			Thread.sleep(5000 * 1);
-		} catch (InterruptedException e) {
-			Log.e("FSKDecoder:run", "error", e);
-			e.printStackTrace();
-		}
 		
 		// continuous loop
 		while (true) {
@@ -77,6 +70,7 @@ public class AudioArduinoService extends ArduinoService {
 		// if (testFrequency>3000) testFrequency = 400;
 	}
 
+	
 	public void stopAndClean() {
 		Log.i(TAG,"stopAndClean");
 		this.mDecoder.stopAndClean();
@@ -128,7 +122,7 @@ public class AudioArduinoService extends ArduinoService {
 				AudioTrack.MODE_STREAM);
 		aT.play();
 		//byte[] tone = generateTone(1000);
-		int[] bits = {2,1,1,1,2,2,1,1};
+		int[] bits = {2,1,2,1,2,1,2,1};
 		double[] sound = FSKModule.encode(bits);
 		Log.i(TAG, "testEncode() sound lenght=" + sound.length);
 		ByteBuffer buf = ByteBuffer.allocate(4 * sound.length);
@@ -273,7 +267,7 @@ public class AudioArduinoService extends ArduinoService {
 	}
 
 	private void testDecodeAmplitude() {
-		int AUDIO_BUFFER_SIZE = 4000;// 16000;
+		int AUDIO_BUFFER_SIZE = 1600;// 16000;
 		int minBufferSize = AudioTrack.getMinBufferSize(AUDIO_SAMPLE_FREQ, 2,
 				AudioFormat.ENCODING_PCM_16BIT);
 		if (AUDIO_BUFFER_SIZE < minBufferSize)
@@ -385,7 +379,7 @@ public class AudioArduinoService extends ArduinoService {
 		this.mDecoder = new FSKDecoder(this.mClientHandler);
 		this.mDecoder.start();
 		
-		int AUDIO_BUFFER_SIZE = 4000;// 16000;
+		int AUDIO_BUFFER_SIZE = 44000;//200000;// 16000;
 		int minBufferSize = AudioTrack.getMinBufferSize(AUDIO_SAMPLE_FREQ, 2,
 				AudioFormat.ENCODING_PCM_16BIT);
 		if (AUDIO_BUFFER_SIZE < minBufferSize)
