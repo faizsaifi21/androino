@@ -1,6 +1,7 @@
 #include <SoftModem.h> // Include the library 
 #include <ctype.h> 
 
+//bueno
 SoftModem modem; //create an instance of SoftModem 
 
 void setup () 
@@ -32,7 +33,4 @@ void loop ()
     }
   } 
 } 
-
-
-
 
