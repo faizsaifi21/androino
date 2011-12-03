@@ -63,9 +63,24 @@ public class AudioArduinoService extends ArduinoService {
 	}
 
 	public void write(String message) {
-		Log.i("ArduinoService::MSG", message);
-		this.testEncode();
+		Log.i(TAG, "write message=" + message);
+		int value = 0;
+		try {
+			value = Integer.parseInt(message);
+		} catch (NumberFormatException e) {
+			Log.e(TAG, "write() error parsing :" + message + ": to integer" );
+			e.printStackTrace();
+		}
+		
+		//char c = message.charAt(0);
+		//int value = (int)c;
+		//byte b = new Integer(value).byteValue();
+		//Log.i(TAG, "write message c=" +  c + " int=" + value + " byte=" + b + " binary=" + Integer.toBinaryString(b));
+		this.encodeMessage(value);
+		
+		//this.testEncode();
 		//testRecordAudio();
+		
 		// testFrequency = testFrequency + 300;
 		// if (testFrequency>3000) testFrequency = 400;
 	}
@@ -109,7 +124,68 @@ public class AudioArduinoService extends ArduinoService {
 		return buf.array();
 
 	}
+	private void encodeMessage(int value) {
+		int AUDIO_BUFFER_SIZE = 16000;
+		int minBufferSize = AudioTrack.getMinBufferSize(AUDIO_SAMPLE_FREQ, 2,
+				AudioFormat.ENCODING_PCM_16BIT);
+		if (AUDIO_BUFFER_SIZE < minBufferSize)
+			AUDIO_BUFFER_SIZE = minBufferSize;
+		AudioTrack aT = new AudioTrack(AudioManager.STREAM_MUSIC,
+				AUDIO_SAMPLE_FREQ, AudioFormat.CHANNEL_CONFIGURATION_MONO,
+				AudioFormat.ENCODING_PCM_16BIT, AUDIO_BUFFER_SIZE,
+				AudioTrack.MODE_STREAM);
+		aT.play();
+		//byte[] tone = generateTone(1000);
+		
+		int[] bits = this.getBits(value);
+		//int[] bits = {1,1,1,1,1,2,1,2};
+		double[] sound = FSKModule.encode(bits);
+		Log.i(TAG, "encodeMessage() message=" + value);
+		ByteBuffer buf = ByteBuffer.allocate(4 * sound.length);
+		buf.order(ByteOrder.LITTLE_ENDIAN);
+		for (int i = 0; i < sound.length; i++) {
+			int yInt = (int) sound[i];
+			buf.putInt(yInt);
+		}
+		byte[] tone = buf.array();
+		
+		int nBytes = aT.write(tone, 0, tone.length);
+		aT.stop();
+		aT.release();
+	}
 
+	private int[] getBits(int value){
+		// if error
+		int[] bits = new int[8];
+		try {
+			String binary = Integer.toBinaryString(value);
+			int len = binary.length();
+			if (len<8) {// adding zeros
+				int nZeros = 8-len;
+				for (int i = 0; i < nZeros; i++) {
+					binary = "0" + binary;
+				}
+			}
+			Log.i(TAG, "getBits() int=" + value+ " binary=" + binary);
+			// change bit ordering arduino receives bits in a different order 
+			char[] bitsC = binary.toCharArray();
+			for (int i = 0; i < 8; i++) {
+				char c = bitsC[i];
+				if (c == '1') bits[7-i] = 2;
+				else bits[7-i] = 1;
+			}
+			
+			//for (int i = 0; i < bits.length; i++) {
+			//	Log.i(TAG, "bit=" + bits[i]);
+			//}
+		} catch (Exception e) {
+			e.printStackTrace();
+			Log.e(TAG, "getBits() ERROR:" + e.getMessage(),e);
+		}
+		return bits;
+		
+	}
+	
 	private void testEncode() {
 		int AUDIO_BUFFER_SIZE = 16000;
 		int minBufferSize = AudioTrack.getMinBufferSize(AUDIO_SAMPLE_FREQ, 2,
