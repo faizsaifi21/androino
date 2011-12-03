@@ -14,10 +14,10 @@
 //#define SOFT_MODEM_HIGH_FREQ   (1600)
 //#define SOFT_MODEM_MAX_RX_BUFF (4)
 
-// #define SOFT_MODEM_BAUD_RATE   (315)
-// #define SOFT_MODEM_LOW_FREQ    (1575)
-// #define SOFT_MODEM_HIGH_FREQ   (3150)
-// #define SOFT_MODEM_MAX_RX_BUFF (8)
+#define SOFT_MODEM_BAUD_RATE   (315)
+#define SOFT_MODEM_LOW_FREQ    (1575)
+#define SOFT_MODEM_HIGH_FREQ   (3150)
+#define SOFT_MODEM_MAX_RX_BUFF (8)
 
 // #define SOFT_MODEM_BAUD_RATE   (630)
 // #define SOFT_MODEM_LOW_FREQ    (3150)
@@ -29,10 +29,10 @@
 //#define SOFT_MODEM_HIGH_FREQ   (4000)
 //#define SOFT_MODEM_MAX_RX_BUFF (16)
 
-#define SOFT_MODEM_BAUD_RATE   (1225)
-#define SOFT_MODEM_LOW_FREQ    (4900)
-#define SOFT_MODEM_HIGH_FREQ   (7350)
-#define SOFT_MODEM_MAX_RX_BUFF (32)
+//#define SOFT_MODEM_BAUD_RATE   (1225)
+//#define SOFT_MODEM_LOW_FREQ    (4900)
+//#define SOFT_MODEM_HIGH_FREQ   (7350)
+//#define SOFT_MODEM_MAX_RX_BUFF (32)
 
 //#define SOFT_MODEM_BAUD_RATE   (2450)
 //#define SOFT_MODEM_LOW_FREQ    (7350)
