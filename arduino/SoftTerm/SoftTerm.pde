@@ -30,12 +30,26 @@ void loop ()
       Serial.println (")"); 
     } 
  */
-  } 
+  }
+ if (Serial.available()) { // data received from the PC
+   while(Serial.available() ){
+     // send data character by character
+     int c = Serial.read();
+     Serial.print("Sending character:");
+    Serial.print(c, DEC);
+    Serial.print(":");
+    Serial.println(c, BIN);
+    modem.write(c);
+   }
+     
+   }
+/*
   if (Serial. available ()){// check that it is receiving data from PC 
     while(Serial.available()){
       char c = Serial. read (); // 1byte Reed 
       modem. write (c); // sent to Phone 
     }
   } 
+*/
 } 
 
