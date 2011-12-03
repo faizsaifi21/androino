@@ -10,6 +10,8 @@ import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
@@ -75,28 +77,37 @@ public class MainActivity extends Activity {
         }
         
         
-        public void onCreate(Bundle savedInstanceState) {
-                Log.i("MainActivity:lifecycle", "onCreate");
-                super.onCreate(savedInstanceState);
-                setContentView(R.layout.main);
-                
-                final Button button = (Button) findViewById(R.id.button_id);
-        button.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                sendMessage("1");        
-            }
-        });
-                final Button button2 = (Button) findViewById(R.id.stop_button);
-        button2.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                mArduinoS.stopAndClean();
-            }
-        });
-        
-                // INITIALIZE Arduino service
-                //this.mArduinoS = new ArduinoService(this.mHandler);
-                this.mArduinoS = new AudioArduinoService(this.mHandler);
-        }
+	public void onCreate(Bundle savedInstanceState) {
+		Log.i("MainActivity:lifecycle", "onCreate");
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.main);
+
+		final Button button = (Button) findViewById(R.id.button_id);
+		button.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				sendMessage("1");
+			}
+		});
+		final Button button2 = (Button) findViewById(R.id.stop_button);
+		button2.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				mArduinoS.stopAndClean();
+			}
+		});
+
+		final Button sendButton = (Button) findViewById(R.id.send_button);
+		sendButton.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				String text = ((TextView) findViewById(R.id.send_text)).getText().toString();
+				sendMessage(text);
+				
+			}
+		});
+
+		// INITIALIZE Arduino service
+		// this.mArduinoS = new ArduinoService(this.mHandler);
+		this.mArduinoS = new AudioArduinoService(this.mHandler);
+	}
 
         protected void onPause() {
                 Log.i("MainActivity:lifecycle", "onPause");
