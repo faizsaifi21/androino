@@ -15,16 +15,21 @@ void loop ()
   while (modem. available ())// check that data received from phone
   {
     int c = modem. read (); // 1byte Reed 
+    Serial.print(c, DEC);
+    Serial.print(":");
+    Serial.println(c, BIN);
+/*
     if (isprint (c)) { 
-      Serial.print((char)c);
+      Serial.println((char)c);
 
     } 
     else { 
       Serial.print ("Character Unkown:");
       Serial.print ("("); //printable characters is displayed in Hex 
       Serial.print (c, HEX); 
-      Serial.print (")"); 
+      Serial.println (")"); 
     } 
+ */
   } 
   if (Serial. available ()){// check that it is receiving data from PC 
     while(Serial.available()){
