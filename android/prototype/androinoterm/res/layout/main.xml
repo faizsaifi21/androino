@@ -20,7 +20,7 @@
             android:layout_height="wrap_content"
             android:text="STOP" />
 
-<TextView android:text="Enter number [0-255]" android:id="@+id/TextView01" android:layout_width="wrap_content" android:layout_height="wrap_content"></TextView><TableLayout android:id="@+id/TableLayout01" android:layout_width="wrap_content" android:layout_height="wrap_content">
+<TextView android:text="Enter number [0-255] |REC|PLAY|TONE|FILE" android:id="@+id/TextView01" android:layout_width="wrap_content" android:layout_height="wrap_content"></TextView><TableLayout android:id="@+id/TableLayout01" android:layout_width="wrap_content" android:layout_height="wrap_content">
 <TableRow android:id="@+id/TableRow01" android:layout_width="wrap_content" android:layout_height="wrap_content">
 	<EditText android:text="" 
 		android:id="@+id/send_text" android:width="25mm" android:layout_width="wrap_content" android:layout_height="wrap_content"></EditText>

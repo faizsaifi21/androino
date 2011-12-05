@@ -9,12 +9,16 @@ import android.util.Log;
 public class Utility {
 	
 	private static String TAG = "Utility";
-	public static String 	CONFIGURATION_BASE_FOLDER	= "";
-	
+	private static String FILENAME = "androino.log";
+
+	public static String getFilePath(){
+		String path = Environment.getExternalStorageDirectory().getPath();
+		String fileFullPath = path + "/" + FILENAME;
+		return fileFullPath;
+	}
 	
 	public static void writeToFile(String message){
-		String path = Environment.getExternalStorageDirectory().getPath();
-		String fileFullPath = path + "/androino.log";
+		String fileFullPath = getFilePath();
 		Log.i(TAG, "full log path:" + fileFullPath);
 		try {
 			//make sure directory exists or it will fail

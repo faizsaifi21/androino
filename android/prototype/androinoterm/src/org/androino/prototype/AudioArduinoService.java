@@ -25,6 +25,7 @@ public class AudioArduinoService extends ArduinoService {
 	private static final String TAG = "AudioArduinoService";
 
 	private byte[] testAudioArray;
+	private int testAudioDuration = 4; //seconds
 	private int testFrequency = 400;
 	private int globalCounter = 0;
 	private FSKDecoder mDecoder;
@@ -61,16 +62,19 @@ public class AudioArduinoService extends ArduinoService {
 	public void write(String message) {
 		Log.i(TAG, "write message=" + message);
 		// development purposes
-		if (message.equals("TEST")){
+		if (message.equals("REC")){
 			testRecordAudio();
 			return;
 		} else if (message.equals("PLAY")){
 			testPlayAudio(-1);
 			return;
+		} else if (message.equals("FILE")){
+			testPlayAudio(-1002);
+			return;
 		} else if (message.equals("TONE")){
-				testPlayAudio(1213);
-				return;
-			}
+			testPlayAudio(1213);
+			return;
+		}
 		int value = 0;
 		try {
 			value = Integer.parseInt(message);
@@ -98,9 +102,27 @@ public class AudioArduinoService extends ArduinoService {
 		this.mDecoder.stopAndClean();
 		super.stopAndClean();
 		
-		// use this code to generate a pure tone
-		//this.testAudioArray = this.generateTone(667);
-		//testPlayAudio();
+		//this.debugByteConversion();
+	}
+	
+	private void debugByteConversion(){
+
+		// memory byte representation
+		byte[] bytes = this.testAudioArray;
+		for (int i = 0; i < 10; i++) {
+			byte b = bytes[i];
+			int in = (int)b;
+			Log.i(TAG, "MEMORY byte i=" + i + ":" + in + ":" + Integer.toBinaryString(b)); 
+		}
+	
+		bytes = readAudioFromFile();
+		for (int i = 0; i < 10; i++) {
+			byte b = bytes[i];
+			int in = (int)b;
+			Log.i(TAG, "FILE byte i=" + i + ":" + in + ":" + Integer.toBinaryString(b)); 
+		}
+
+		
 	}
 
 	
@@ -224,25 +246,28 @@ public class AudioArduinoService extends ArduinoService {
 
 	
 	private void testPlayAudio(int frequency) {
-		int AUDIO_BUFFER_SIZE = 4*2*AUDIO_SAMPLE_FREQ; // 4 seconds / 2bytes=16bit
+		int AUDIO_BUFFER_SIZE = testAudioDuration*2*AUDIO_SAMPLE_FREQ; // 2 seconds / 2bytes=16bit
 		int minBufferSize = AudioTrack.getMinBufferSize(AUDIO_SAMPLE_FREQ, 2,
 				AudioFormat.ENCODING_PCM_16BIT);
 		if (AUDIO_BUFFER_SIZE < minBufferSize)
 			AUDIO_BUFFER_SIZE = minBufferSize;
+
+		byte[] audio;
+		if (frequency >0) {
+			Log.i(TAG, "testPlayAudio frequency=" + frequency);
+			audio = generateTone(frequency,testAudioDuration*1000);
+			}
+		else if (frequency==-1002){
+			audio = readAudioFromFile();
+		} else 
+			audio = this.testAudioArray;
+		Log.i(TAG, "testPlayAudio length=" + audio.length);
+
 		AudioTrack aT = new AudioTrack(AudioManager.STREAM_MUSIC,
 				AUDIO_SAMPLE_FREQ, AudioFormat.CHANNEL_CONFIGURATION_MONO,
 				AudioFormat.ENCODING_PCM_16BIT, AUDIO_BUFFER_SIZE,
 				AudioTrack.MODE_STREAM);
 		aT.play();
-		byte[] audio;
-		if (frequency >0) {
-			Log.i(TAG, "testPlayAudio frequency=" + frequency);
-			audio = generateTone(frequency,4*1000);
-			}
-		else 
-			audio = this.testAudioArray;
-		Log.i(TAG, "testPlayAudio length=" + audio.length);
-
 		int nBytes = aT.write(audio, 0,audio.length);
 		//int nBytes = aT.write(this.testAudioArray, 0,this.testAudioArray.length);
 		Log.i(TAG, "testPlayAudio written bytes=" + nBytes);
@@ -255,7 +280,7 @@ public class AudioArduinoService extends ArduinoService {
 	
 	private void testRecordAudio() {
 		int AUDIO_BUFFER_SIZE = 2*AUDIO_SAMPLE_FREQ; // 2 bytes per sample (PCM 16bit)
-		int recordingBufferSize = 4 *AUDIO_BUFFER_SIZE; // 4 seconds recording
+		int recordingBufferSize = testAudioDuration *AUDIO_BUFFER_SIZE; // seconds recording
 		int minBufferSize = AudioTrack.getMinBufferSize(AUDIO_SAMPLE_FREQ, 2,
 				AudioFormat.ENCODING_PCM_16BIT);
 		if (AUDIO_BUFFER_SIZE < minBufferSize)
@@ -290,12 +315,34 @@ public class AudioArduinoService extends ArduinoService {
 				+ AUDIO_BUFFER_SIZE + "\n";
 		
 		// saving data to file
-		//saveAudioToFile(message, audioData);
+		saveAudioToFile(message, audioData);
 
 		// finalization
 		aR.stop();
 		aR.release();
 		Log.i(TAG, "audio recording stoped");
+	}
+	
+	private byte[] readAudioFromFile(){
+		String filePath = Utility.getFilePath();
+		double[] data = FSKModule.readInfoFromFile(filePath, testAudioDuration* AUDIO_SAMPLE_FREQ );
+		Log.i(TAG, "readAudioFromFile:" + filePath + " size=" + data.length);
+		ByteBuffer buf = ByteBuffer.allocate(2 * data.length); //16bits
+		buf.order(ByteOrder.LITTLE_ENDIAN);
+
+		byte[] sound = new byte[0];
+		try {
+			for (int i = 0; i < data.length; i++) {
+				short value = (short) data[i];
+				buf.putShort(value);
+			}
+		} catch (Exception e) {
+			Log.e(TAG, "readAudioFromFile Error " + e.getMessage(), e);
+			e.printStackTrace();
+		}
+		sound = buf.array();
+		Log.i(TAG, "readAudioFromFile() nbytes=" + sound.length);
+		return sound;
 	}
 
 	private void saveAudioToFile(String header, byte[] audioData) {

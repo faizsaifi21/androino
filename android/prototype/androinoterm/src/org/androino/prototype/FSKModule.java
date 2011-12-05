@@ -149,8 +149,8 @@ public class FSKModule {
 	}
 	
 	
-	private double[] readInfoFromFile(String filePath){
-		double[] data = new double[BUFFER_SIZE];
+	public static double[] readInfoFromFile(String filePath, int numberLines){
+		double[] data = new double[numberLines];
 		int counter = 0;	                       
 		try {
 			File f = new File(filePath);
@@ -431,6 +431,44 @@ public class FSKModule {
 		}
 		return message;
 	}
+
+	private void debugByteConversion(){
+		
+		byte[] bytes = {(byte)88, (byte)64, (byte)65, (byte)(-1), 
+				(byte)88, (byte)0, (byte)65, (byte)0, (byte)65, (byte)0 };
+		
+		int nNumbers = 5;
+		int nBytes = 2*nNumbers; // 
+		
+		// byte representation
+		for (int i = 0; i < nBytes; i++) {
+			byte b = bytes[i];
+			int in = (int)b;
+			debugInfo( "byte i=" + i + ":" + in + ":" + Integer.toBinaryString(b));
+		}
+		// bytes->double conversion
+		ByteBuffer buf = ByteBuffer.wrap(bytes, 0, 10);
+		buf.order(ByteOrder.LITTLE_ENDIAN);
+		double[] nums = new double[nNumbers];
+		for (int i = 0; i < nNumbers; i++) {
+			double d =(double) buf.getShort();
+			nums[i] = d;
+			debugInfo("double conversion i=" + i + " double=" + d);
+		}
+		// double->byte conversion
+		buf = ByteBuffer.allocate(nBytes);
+		buf.order(ByteOrder.LITTLE_ENDIAN);
+		for (int i = 0; i < nNumbers; i++) {
+			short s = (short)nums[i];
+			buf.putShort(s);
+		}
+		bytes = buf.array();
+		for (int i = 0; i < nBytes; i++) {
+			byte b = bytes[i];
+			int in = (int)b;
+			debugInfo("byte i=" + i + ":" + in + ":" + Integer.toBinaryString(b)); 
+		}
+	}
 	
 	
 	public static void main(String[] args){
@@ -442,7 +480,7 @@ public class FSKModule {
 			File f = new File("./");
 			String path = f.getCanonicalPath();
 			debugInfo("working dir=" + path);
-			sound = m.readInfoFromFile("../testdata/sound.dat");
+			sound = m.readInfoFromFile("../testdata/sound.dat", BUFFER_SIZE);
 			for (int i = 0; i < 10; i++) {
 				debugInfo("data:" + i + ":" + sound[i]);
 			}
