@@ -16,10 +16,8 @@ public class AudioArduinoService extends ArduinoService {
 
 	private static final int GT540_SAMPLE_FREQ = 44100;
 	private static final int DEVEL_SAMPLE_FREQ = 8000;
-	private static final int AUDIO_SAMPLE_FREQ = GT540_SAMPLE_FREQ;
-
-	public static int BAUD_RATE_SENDING = 315;
-	public static int BAUD_RATE_RECEIVING = 315;
+	private static final int AUDIO_SAMPLE_FREQ = GT540_SAMPLE_FREQ ;
+	public static int ACQ_AUDIO_BUFFER_SIZE = 44100;		
 
 	public static int SOFT_MODEM_HIGH_FREQ = 3150;
 	public static int SOFT_MODEM_LOW_FREQ = 1575;
@@ -40,20 +38,18 @@ public class AudioArduinoService extends ArduinoService {
 		this.forceStop = false;
 
 		//testDecodeAmplitude();
-		testDecode();
-		
+		//testDecode();
 		
 		// continuous loop
 		while (true) {
 			// stop if requested
 			if (this.forceStop) {
-				// audioR.stop();
-				// audioR.release();
+				try {
+					Thread.sleep(500*1);
+				} catch (InterruptedException e) {
+				}
 				break;
 			}
-			// sound acquisition
-			// int nBytes = audioR.read(audioData, 0, j);
-			// analyzeSound(audioData, nBytes);
 		}
 	}
 
@@ -64,6 +60,17 @@ public class AudioArduinoService extends ArduinoService {
 
 	public void write(String message) {
 		Log.i(TAG, "write message=" + message);
+		// development purposes
+		if (message.equals("TEST")){
+			testRecordAudio();
+			return;
+		} else if (message.equals("PLAY")){
+			testPlayAudio(-1);
+			return;
+		} else if (message.equals("TONE")){
+				testPlayAudio(1213);
+				return;
+			}
 		int value = 0;
 		try {
 			value = Integer.parseInt(message);
@@ -97,10 +104,11 @@ public class AudioArduinoService extends ArduinoService {
 	}
 
 	
-	private byte[] generateTone(int frequency) {
-		int duration = 1; // s
-		int samplingRate = 8000; // Hz
-		int numberOfSamples = duration * samplingRate;
+	private byte[] generateTone(int frequency, long millis) {
+		//int duration = millis/1000; // s
+		int samplingRate = AUDIO_SAMPLE_FREQ; // Hz
+		int numberOfSamples = (int)(millis * samplingRate/1000);
+		numberOfSamples = numberOfSamples/2;
 		double samplingTime = 1.0 / samplingRate;
 		Log.i(TAG, "generateTone:samplingTime=" + samplingTime);
 		ByteBuffer buf = ByteBuffer.allocate(4 * numberOfSamples);
@@ -215,8 +223,8 @@ public class AudioArduinoService extends ArduinoService {
 	}
 
 	
-	private void testPlayAudio() {
-		int AUDIO_BUFFER_SIZE = 16000;
+	private void testPlayAudio(int frequency) {
+		int AUDIO_BUFFER_SIZE = 4*2*AUDIO_SAMPLE_FREQ; // 4 seconds / 2bytes=16bit
 		int minBufferSize = AudioTrack.getMinBufferSize(AUDIO_SAMPLE_FREQ, 2,
 				AudioFormat.ENCODING_PCM_16BIT);
 		if (AUDIO_BUFFER_SIZE < minBufferSize)
@@ -226,51 +234,35 @@ public class AudioArduinoService extends ArduinoService {
 				AudioFormat.ENCODING_PCM_16BIT, AUDIO_BUFFER_SIZE,
 				AudioTrack.MODE_STREAM);
 		aT.play();
-		int nBytes = aT.write(this.testAudioArray, 0,
-				this.testAudioArray.length);
+		byte[] audio;
+		if (frequency >0) {
+			Log.i(TAG, "testPlayAudio frequency=" + frequency);
+			audio = generateTone(frequency,4*1000);
+			}
+		else 
+			audio = this.testAudioArray;
+		Log.i(TAG, "testPlayAudio length=" + audio.length);
+
+		int nBytes = aT.write(audio, 0,audio.length);
+		//int nBytes = aT.write(this.testAudioArray, 0,this.testAudioArray.length);
+		Log.i(TAG, "testPlayAudio written bytes=" + nBytes);
 		// byte[] tone = generateTone(this.testFrequency);
 		// int nBytes = aT.write(tone, 0, tone.length);
 		aT.stop();
 		aT.release();
 	}
 
-	private byte[] removed_newAudioDataBuffer(){
-		int AUDIO_BUFFER_SIZE = 16000;
-		int minBufferSize = AudioTrack.getMinBufferSize(AUDIO_SAMPLE_FREQ, 2,
-				AudioFormat.ENCODING_PCM_16BIT);
-		if (AUDIO_BUFFER_SIZE < minBufferSize)
-			AUDIO_BUFFER_SIZE = minBufferSize;
-
-		Log.i(TAG, "buffer size:" + AUDIO_BUFFER_SIZE);
-		byte[] audioData = new byte[AUDIO_BUFFER_SIZE];
-		return audioData;
-	}
-	
-	private int removed_recordAudio(byte[] audioData) {
-		int AUDIO_BUFFER_SIZE = audioData.length;
-		// appendDebugInfo("BufferSize", "" + AUDIO_BUFFER_SIZE);
-		AudioRecord aR = new AudioRecord(MediaRecorder.AudioSource.MIC,
-				AUDIO_SAMPLE_FREQ, 2, AudioFormat.ENCODING_PCM_16BIT,
-				AUDIO_BUFFER_SIZE);
-
-		// audio recording
-		aR.startRecording();
-		int nBytes = aR.read(audioData, 0, AUDIO_BUFFER_SIZE);
-		aR.stop();
-		aR.release();
-		Log.i(TAG, "audio recording stoped");
-		return nBytes;
-	}
 	
 	private void testRecordAudio() {
-		int AUDIO_BUFFER_SIZE = 16000;
+		int AUDIO_BUFFER_SIZE = 2*AUDIO_SAMPLE_FREQ; // 2 bytes per sample (PCM 16bit)
+		int recordingBufferSize = 4 *AUDIO_BUFFER_SIZE; // 4 seconds recording
 		int minBufferSize = AudioTrack.getMinBufferSize(AUDIO_SAMPLE_FREQ, 2,
 				AudioFormat.ENCODING_PCM_16BIT);
 		if (AUDIO_BUFFER_SIZE < minBufferSize)
 			AUDIO_BUFFER_SIZE = minBufferSize;
 
-		Log.i(TAG, "buffer size:" + AUDIO_BUFFER_SIZE);
-		byte[] audioData = new byte[AUDIO_BUFFER_SIZE];
+		Log.i(TAG, "buffer size:" + recordingBufferSize);
+		byte[] audioData = new byte[recordingBufferSize];
 
 		// appendDebugInfo("BufferSize", "" + AUDIO_BUFFER_SIZE);
 		AudioRecord aR = new AudioRecord(MediaRecorder.AudioSource.MIC,
@@ -281,9 +273,9 @@ public class AudioArduinoService extends ArduinoService {
 		aR.startRecording();
 		int nBytes = 0;
 		int index = 0;
-		int freeBuffer = AUDIO_BUFFER_SIZE;
+		int freeBuffer = recordingBufferSize;
 		do {
-			nBytes = aR.read(audioData, index, freeBuffer);
+			nBytes = aR.read(audioData, index, AUDIO_BUFFER_SIZE);
 			if (nBytes < 0) {
 				Log.e(TAG, "read error=" + nBytes);
 				break; // error happened
@@ -291,21 +283,16 @@ public class AudioArduinoService extends ArduinoService {
 			freeBuffer = freeBuffer - nBytes;
 			index = index + nBytes;
 			Log.i(TAG, "read #bytes:" + nBytes);
-		} while (freeBuffer > 0);
+		} while (freeBuffer >= AUDIO_BUFFER_SIZE);
 
 		testAudioArray = audioData;
 		String message = "Sampling=" + AUDIO_SAMPLE_FREQ + ":" + "buffer size="
 				+ AUDIO_BUFFER_SIZE + "\n";
-		saveAudioToFile(message, audioData);
-		// Utility.writeToFile(message);
-		// showBytebuffer(audioData);
-		// try {Thread.sleep(1000 * 2); } catch (InterruptedException e)
-		// {e.printStackTrace();}
-		// nBytes = aR.read(audioData, 0, AUDIO_BUFFER_SIZE);
-		// Log.d(TAG, "read #bytes:" + nBytes);
-		// showBytebuffer(audioData);
-		// try {Thread.sleep(1000 * 2); } catch (InterruptedException e)
-		// {e.printStackTrace();}
+		
+		// saving data to file
+		//saveAudioToFile(message, audioData);
+
+		// finalization
 		aR.stop();
 		aR.release();
 		Log.i(TAG, "audio recording stoped");
@@ -455,7 +442,7 @@ public class AudioArduinoService extends ArduinoService {
 		this.mDecoder = new FSKDecoder(this.mClientHandler);
 		this.mDecoder.start();
 		
-		int AUDIO_BUFFER_SIZE = 44000;//200000;// 16000;
+		int AUDIO_BUFFER_SIZE = ACQ_AUDIO_BUFFER_SIZE; //44000;//200000;// 16000;
 		int minBufferSize = AudioTrack.getMinBufferSize(AUDIO_SAMPLE_FREQ, 2,
 				AudioFormat.ENCODING_PCM_16BIT);
 		if (AUDIO_BUFFER_SIZE < minBufferSize)

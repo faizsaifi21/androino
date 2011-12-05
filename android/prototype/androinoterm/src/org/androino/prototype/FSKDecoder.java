@@ -27,6 +27,7 @@ public class FSKDecoder extends Thread {
 		while (!this.forceStop) {
 			
 			try {
+				//if (signalAvailable()){
 				if (soundAvailable()){
 					decodeSound();
 				} else
@@ -47,6 +48,18 @@ public class FSKDecoder extends Thread {
 		if (this.mSound.size()>=MINIMUM_BUFFER) return true;
 		else return false;
 	}
+	private boolean signalAvailable(){
+		if (soundAvailable()){
+			// there is sound in the buffer
+			byte[] sound = this.mSound.elementAt(0);
+			double data[] = this.byte2double(sound);
+			boolean available = FSKModule.signalAvailable(data);
+			if (available) return true; // signal recognized
+			// signal not recognized, removing sound from the buffer
+			clearFirstSound();
+			return false;
+		} else return false;
+	}
 	
 	public synchronized void addSound(byte[] sound, int nBytes){
 		Log.i(TAG, "addSound nBytes="+ nBytes);
@@ -55,6 +68,10 @@ public class FSKDecoder extends Thread {
 			data[i] = sound[i];
 		}
 		this.mSound.add(data);
+	}
+	
+	private synchronized void clearFirstSound(){
+		this.mSound.remove(0);
 	}
 	
 	private synchronized byte[] consumeSound(){
@@ -112,9 +129,19 @@ public class FSKDecoder extends Thread {
 	
 	private void decodeSound(){
 		byte[] sound = consumeSound();
-		Log.i(TAG, "analizeSound: length=" + sound.length);
+		Log.i(TAG, "decodeSound: length=" + sound.length);
 		//this.decodeAmplitude(sound, sound.length);
 		this.decodeFSK(sound);
+	}
+	private void debugAndroinoException(AndroinoException ae){
+		if (ae.getType() == AndroinoException.TYPE_FSK_DEBUG){
+			Vector info = (Vector) ae.getDebugInfo();
+			double[] sound = (double[]) info.get(0);
+			int[] nPeaks = (int[]) info.get(1);
+			int[] bits = (int[]) info.get(2);
+			String message = (String) info.get(3);
+			
+		}
 	}
 	
 	private void decodeFSK(byte[] audioData) {
@@ -129,21 +156,9 @@ public class FSKDecoder extends Thread {
 			this.mClientHandler.obtainMessage(ArduinoService.HANDLER_MSG_RECEIVED, message, 0).sendToTarget();
 		} 
 		catch (AndroinoException ae){
-			
-			if (ae.getType() == AndroinoException.TYPE_FSK_DEBUG){
-				Log.w(TAG, "byte:" + "Position"+ ":"+ "byte"+":"+"toString(b)" + ":" +  "Integer.toBinaryString" + ":" + "Integer.toHexString");
-				/*for (int i = 0; i <1500; i++) {
-					byte b = audioData[i];
-					Log.w(TAG, "byte:" + i+ ":"+ b+":"+Byte.toString(b) + ":" +  Integer.toBinaryString((int)b) + ":" + Integer.toHexString(b));
-				}
-				for (int i = 0; i < 8000; i++) {
-					Log.w(TAG, "sound:" + i+ ":"+ sound[i]);
-			
-				}
-			*/}
-			
+			//this.debugAndroinoException(ae);
 			Log.e(TAG, "decodeFSK:Androino ERROR="+ ae.getMessage());
-			this.mClientHandler.obtainMessage(ArduinoService.HANDLER_MSG_RECEIVED, -1, 0).sendToTarget();
+			this.mClientHandler.obtainMessage(ArduinoService.HANDLER_MSG_RECEIVED, ae.getType(), 0).sendToTarget();
 		}
 		catch (Exception e) {
 			this.mClientHandler.obtainMessage(ArduinoService.HANDLER_MSG_RECEIVED, -2, 0).sendToTarget();

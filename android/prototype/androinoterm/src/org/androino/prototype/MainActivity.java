@@ -61,6 +61,7 @@ public class MainActivity extends Activity {
                         showInfo("STOP message:" + msg.arg1);
                         break;
                 default:
+                    	showInfo("message:" + msg.arg1);
                         break;
                 }
                 
@@ -85,7 +86,7 @@ public class MainActivity extends Activity {
 		final Button button = (Button) findViewById(R.id.button_id);
 		button.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
-				sendMessage("1");
+				sendMessage("TEST");
 			}
 		});
 		final Button button2 = (Button) findViewById(R.id.stop_button);

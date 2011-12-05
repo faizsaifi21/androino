@@ -332,6 +332,26 @@ public class FSKModule {
 		return index-1;
 	}
 	
+	public static boolean signalAvailable(double[] sound){
+		FSKModule m = new FSKModule();
+
+		int nPoints = N_POINTS;
+		int nParts = sound.length / nPoints;
+		int nPeaks = 0;  
+		int startIndex = 0;
+		int i = 0;
+		do {
+			int endIndex = startIndex + nPoints;
+			int n = m.countPeaks(sound, startIndex, endIndex);
+			nPeaks += n;
+			i++;
+			startIndex = endIndex;
+			if (nPeaks > 2*HIGH_BIT_N_PEAKS) return true;
+		} while (i<nParts);
+		return false;
+	}
+	
+	
 	private int[] processSound(double[] sound){
 		// split the sound array into slots of N_POINTS and calculate the number of peaks
 		
@@ -393,6 +413,22 @@ public class FSKModule {
 		int message = m.decodeUniqueMessage(bits);
 		Log.w(TAG, "VALUE"+message);
 		
+		int counter = 0;
+		for (int i = 0; i < nPeaks.length; i++) {
+			counter+= nPeaks[i];
+		}
+		if (message<0 && counter>10){
+			AndroinoException ae = new AndroinoException("ERROR decodeSound()", AndroinoException.TYPE_FSK_DEBUG);
+			/*
+			Vector v = new Vector();
+			v.add(sound);
+			v.add(nPeaks);
+			v.add(bits);
+			v.add(""+message);
+			ae.setDebugInfo(v);
+			*/
+			throw ae;
+		}
 		return message;
 	}
 	

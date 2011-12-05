@@ -2,10 +2,11 @@ package org.androino.prototype;
 
 public class AndroinoException extends RuntimeException {
 
-	public static final int TYPE_FSK_DECODING_ERROR = 0;
-	public static final int TYPE_FSK_DEBUG = 1;
+	public static final int TYPE_FSK_DECODING_ERROR = 1001;
+	public static final int TYPE_FSK_DEBUG = 1002;
 	
 	private int type;
+	private Object debugInfo;
 	
 	public int getType(){
 		return this.type;
@@ -20,6 +21,10 @@ public class AndroinoException extends RuntimeException {
 		super(detailMessage);
 		this.type = type;
 	}
-
-	
+	void setDebugInfo(Object o){
+		this.debugInfo = o;
+	}
+	Object getDebugInfo(){
+		return this.debugInfo;
+	}
 }
