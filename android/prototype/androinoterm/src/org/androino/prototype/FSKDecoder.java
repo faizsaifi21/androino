@@ -15,6 +15,7 @@ public class FSKDecoder extends Thread {
 	private Handler mClientHandler;
 	private Vector<byte[]> mSound; 
 	private static String TAG = "FSKDecoder";
+	private boolean debugAddSoundDisabled = false;
 		
 	public FSKDecoder(Handler handler){
 		this.mClientHandler = handler;
@@ -31,7 +32,7 @@ public class FSKDecoder extends Thread {
 				if (soundAvailable()){
 					decodeSound();
 				} else
-				Thread.sleep(1000*1);
+					Thread.sleep(200*1);
 			} catch (InterruptedException e) {
 				Log.e("FSKDecoder:run", "error", e);
 				e.printStackTrace();
@@ -45,8 +46,10 @@ public class FSKDecoder extends Thread {
 	}
 	
 	private synchronized boolean soundAvailable(){
-		if (this.mSound.size()>=MINIMUM_BUFFER) return true;
-		else return false;
+		boolean available = false;
+		if (this.mSound.size()>=MINIMUM_BUFFER) available = true;
+		Log.v(TAG, "soundAvailable()=" + available);
+		return available;
 	}
 	private boolean signalAvailable(){
 		if (soundAvailable()){
@@ -62,12 +65,13 @@ public class FSKDecoder extends Thread {
 	}
 	
 	public synchronized void addSound(byte[] sound, int nBytes){
-		Log.i(TAG, "addSound nBytes="+ nBytes);
+		if (debugAddSoundDisabled) return;
 		byte[] data = new byte[nBytes];
 		for (int i = 0; i < nBytes; i++) {
 			data[i] = sound[i];
 		}
 		this.mSound.add(data);
+		Log.i(TAG, "addSound nBytes="+ nBytes + " accumulated=" + this.mSound.size());
 	}
 	
 	private synchronized void clearFirstSound(){
@@ -89,6 +93,7 @@ public class FSKDecoder extends Thread {
 			counter = s.length;
 		}
 		this.mSound.clear();
+		Log.d(TAG, "consumeSound() nBytes=" + sound.length);
 		return sound;
 	}
 	private void saveAudioToFile(String header, byte[] audioData) {
@@ -135,11 +140,28 @@ public class FSKDecoder extends Thread {
 	}
 	private void debugAndroinoException(AndroinoException ae){
 		if (ae.getType() == AndroinoException.TYPE_FSK_DEBUG){
+			this.debugAddSoundDisabled = true;
 			Vector info = (Vector) ae.getDebugInfo();
 			double[] sound = (double[]) info.get(0);
 			int[] nPeaks = (int[]) info.get(1);
 			int[] bits = (int[]) info.get(2);
 			String message = (String) info.get(3);
+			Log.w(TAG, "debugAndroinoException() sound lenght=" + sound.length );
+			Log.w(TAG, "debugAndroinoException() npeaks len=" + nPeaks.length );
+			Log.w(TAG, "debugAndroinoException() bits len=" + bits.length );
+			Log.w(TAG, "debugAndroinoException() message=" + message);
+			
+			try {
+				String header ="Adroino Exception\n";
+				StringBuffer strB = new StringBuffer(header);
+				for (int i = 0; i < sound.length; i++) {
+					strB.append(sound[i]+ "\n" );
+				}
+				Utility.writeToFile(strB.toString());
+			} catch (Exception e) {
+				Log.e(TAG, "Error saving to file", e);
+				e.printStackTrace();
+			}
 			
 		}
 	}
@@ -147,11 +169,11 @@ public class FSKDecoder extends Thread {
 	private void decodeFSK(byte[] audioData) {
 		double[] sound = byte2double(audioData);
 		
-		Log.w(TAG, "decodeFSK: bytes length=" + audioData.length);
-		Log.w(TAG, "decodeFSK: doubles length=" + sound.length);
+		Log.d(TAG, "decodeFSK: bytes length=" + audioData.length);
+		Log.i(TAG, "decodeFSK: doubles length=" + sound.length);
 		try {
 			int message = FSKModule.decodeSound(sound);
-			Log.d(TAG, "decodeFSK():message=" + message);
+			Log.w(TAG, "decodeFSK():message=" + message);
 			if (message >0)
 			this.mClientHandler.obtainMessage(ArduinoService.HANDLER_MSG_RECEIVED, message, 0).sendToTarget();
 		} 
@@ -161,8 +183,8 @@ public class FSKDecoder extends Thread {
 			this.mClientHandler.obtainMessage(ArduinoService.HANDLER_MSG_RECEIVED, ae.getType(), 0).sendToTarget();
 		}
 		catch (Exception e) {
-			this.mClientHandler.obtainMessage(ArduinoService.HANDLER_MSG_RECEIVED, -2, 0).sendToTarget();
 			Log.e(TAG, "decodeFSK:ERROR="+ e.getMessage(), e);
+			this.mClientHandler.obtainMessage(ArduinoService.HANDLER_MSG_RECEIVED, -2, 0).sendToTarget();
 		}
 	}
 

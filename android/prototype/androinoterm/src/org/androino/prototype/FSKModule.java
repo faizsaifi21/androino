@@ -6,7 +6,7 @@ import java.nio.ByteOrder;
 import java.util.Iterator;
 import java.util.Vector;
 
-//import android.util.Log;
+import android.util.Log;
 
 public class FSKModule {
 	
@@ -35,8 +35,10 @@ public class FSKModule {
 	private static int N_POINTS = SAMPLES_PER_BIT/SLOTS_PER_BIT;  // 34=136/4
 	
 	private static double PEAK_AMPLITUDE_TRESHOLD = 60; // significative sample (not noise)
-	private static int NUMBER_SAMPLES_PEAK = 3;			// minimum number of significative samples to be considered a peak
+	private static int NUMBER_SAMPLES_PEAK = 4;			// minimum number of significative samples to be considered a peak
 
+	private static int MINUMUM_NPEAKS = 100;
+	
 	private static final int BIT_HIGH_SYMBOL=2;
 	private static final int BIT_LOW_SYMBOL=1;
 	private static final int BIT_NONE_SYMBOL=0;
@@ -52,8 +54,8 @@ public class FSKModule {
 	}
 	
 	private static void debugInfo(String message){
-		System.out.println(">>" + message);
-		//Log.w(TAG, message);
+		//System.out.println(">>" + message);
+		Log.w(TAG, message);
 	}
 
 	public static double[] encode(int[] bits){
@@ -286,11 +288,12 @@ public class FSKModule {
 		debugInfo("parseBits lows=" + lowCounter);
 		debugInfo("parseBits highs=" + highCounter);
 		
+		/*
 		for (int j = nonZeroIndex; j < peaks.length; j++) {
 			message += j + ":" + peaks[j] +"\n";
 		}
 		debugInfo("parseBits bits[]=" + message);
-		
+		*/
 		// message+="SLOTS_PER_BIT+i<peaks.length"+(SLOTS_PER_BIT+i<peaks.length);
 		/*for (int j = 0; j < bits.length; j++) {
 			
@@ -369,6 +372,9 @@ public class FSKModule {
 		} while (i<nParts);
 		//} while (startIndex+nPoints<sound.length);
 		debugInfo("processSound() peaksCounter=" + peakCounter);
+		if (peakCounter < MINUMUM_NPEAKS) {
+			nPeaks = new int[0];
+		}
 		return nPeaks;
 	}
 	private int countPeaks(double[] sound, int startIndex, int endIndex){
@@ -403,7 +409,10 @@ public class FSKModule {
 		FSKModule m = new FSKModule();
 		// processing sound in parts and
 		//Log.w(TAG, "ENTRO EN processound");
-		int[] nPeaks = m.processSound(sound);//---------------------> OK!!
+		int[] nPeaks = m.processSound(sound);
+		if (nPeaks.length == 0) // exit: no signal detected 
+			return -1;
+		
 		//debugInfo("decodeSound nPeaks=" + nPeaks.length);
 		// transform number of peaks into bits 
 		//Log.w(TAG, "ENTRO EN parseBits");
@@ -417,8 +426,8 @@ public class FSKModule {
 		for (int i = 0; i < nPeaks.length; i++) {
 			counter+= nPeaks[i];
 		}
-		if (message<0 && counter>10){
-			AndroinoException ae = new AndroinoException("ERROR decodeSound()", AndroinoException.TYPE_FSK_DEBUG);
+		if (message<0 && counter>1500){
+			AndroinoException ae = new AndroinoException("ERROR decodeSound() nPeaks=" + counter, AndroinoException.TYPE_FSK_DEBUG);
 			Vector v = new Vector();
 			v.add(sound);
 			v.add(nPeaks);

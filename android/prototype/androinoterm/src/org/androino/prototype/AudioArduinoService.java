@@ -17,7 +17,7 @@ public class AudioArduinoService extends ArduinoService {
 	private static final int GT540_SAMPLE_FREQ = 44100;
 	private static final int DEVEL_SAMPLE_FREQ = 8000;
 	private static final int AUDIO_SAMPLE_FREQ = GT540_SAMPLE_FREQ ;
-	public static int ACQ_AUDIO_BUFFER_SIZE = 44100;		
+	public static int ACQ_AUDIO_BUFFER_SIZE = 44100/2;		
 
 	public static int SOFT_MODEM_HIGH_FREQ = 3150;
 	public static int SOFT_MODEM_LOW_FREQ = 1575;
@@ -25,7 +25,7 @@ public class AudioArduinoService extends ArduinoService {
 	private static final String TAG = "AudioArduinoService";
 
 	private byte[] testAudioArray;
-	private int testAudioDuration = 4; //seconds
+	private int testAudioDuration = 2; //seconds
 	private int testFrequency = 400;
 	private int globalCounter = 0;
 	private FSKDecoder mDecoder;
@@ -39,7 +39,7 @@ public class AudioArduinoService extends ArduinoService {
 		this.forceStop = false;
 
 		//testDecodeAmplitude();
-		//testDecode();
+		testDecode();
 		
 		// continuous loop
 		while (true) {
@@ -258,6 +258,7 @@ public class AudioArduinoService extends ArduinoService {
 			audio = generateTone(frequency,testAudioDuration*1000);
 			}
 		else if (frequency==-1002){
+			// something wrong: only plays the first second
 			audio = readAudioFromFile();
 		} else 
 			audio = this.testAudioArray;
