@@ -3,13 +3,10 @@ package org.androino.prototype;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.Vector;
 
-import android.util.Log;
+//import android.util.Log;
 
 public class FSKModule {
 	
@@ -37,7 +34,7 @@ public class FSKModule {
 	private static int SLOTS_PER_BIT = 4; // 4 parts: determines the size of the part analyzed to count peaks
 	private static int N_POINTS = SAMPLES_PER_BIT/SLOTS_PER_BIT;  // 34=136/4
 	
-	private static double PEAK_AMPLITUDE_TRESHOLD = 5000; // significative sample (not noise)
+	private static double PEAK_AMPLITUDE_TRESHOLD = 60; // significative sample (not noise)
 	private static int NUMBER_SAMPLES_PEAK = 3;			// minimum number of significative samples to be considered a peak
 
 	private static final int BIT_HIGH_SYMBOL=2;
@@ -55,8 +52,8 @@ public class FSKModule {
 	}
 	
 	private static void debugInfo(String message){
-		//System.out.println(">>" + message);
-		Log.w(TAG, message);
+		System.out.println(">>" + message);
+		//Log.w(TAG, message);
 	}
 
 	public static double[] encode(int[] bits){
@@ -481,7 +478,7 @@ public class FSKModule {
 			File f = new File("./");
 			String path = f.getCanonicalPath();
 			debugInfo("working dir=" + path);
-			sound = m.readInfoFromFile("../testdata/sound.dat", BUFFER_SIZE);
+			sound = m.readInfoFromFile("./testdata/a.10000110.dat", BUFFER_SIZE);
 			for (int i = 0; i < 10; i++) {
 				debugInfo("data:" + i + ":" + sound[i]);
 			}
@@ -504,16 +501,21 @@ public class FSKModule {
 			//	debugInfo("bits:" + i + ":" + bits[i]);
 			//}
 			// decode bits array into messages
-			Vector<String> msgs = m.decodeBits(bits);
-			for (Iterator iterator = msgs.iterator(); iterator.hasNext();) {
-				String msg = (String) iterator.next();
-				debugInfo("msg="+ msg);
-			}
+			//Vector<String> msgs = m.decodeBits(bits);
+			//for (Iterator iterator = msgs.iterator(); iterator.hasNext();) {
+			//	String msg = (String) iterator.next();
+			//	debugInfo("msg="+ msg);
+			//}
+			// decode bits
+			int msg = m.decodeUniqueMessage(bits);
+			debugInfo("msg=" + msg);
+			
 //}
 //Date endD = new Date();
 //System.out.println("calculation time=" + (endD.getTime()-startD.getTime()));
 // Testing the processing time it takes 0.7 milliseconds
 
+			/*
 			// complete cycle: encode a message and then decode it.
 			int[] message = {1,1,1,1,1,1,2,2}; //(2=bit-1, 1=bit-0,
 			String msgText = "";
@@ -525,12 +527,14 @@ public class FSKModule {
 			//m.saveInfoToFile("./testdata/generated.dat", soundA);
 			int[] nPeaksA = m.processSound(soundA);
 			int[] bitsA = m.parseBits(nPeaksA);
+			
 			Vector<String> messages = m.decodeBits(bitsA);
 			for (Iterator iterator = messages.iterator(); iterator.hasNext();) {
 				String msg = (String) iterator.next();
 				debugInfo("msg="+ msg);
 			}
 			
+			*/
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
