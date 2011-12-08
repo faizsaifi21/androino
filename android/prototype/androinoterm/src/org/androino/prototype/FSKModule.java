@@ -55,7 +55,8 @@ public class FSKModule {
 	}
 	
 	private static void debugInfo(String message){
-		System.out.println(">>" + message);
+		//System.out.println(">>" + message);
+		Log.w(TAG, message);
 	}
 
 	public static double[] encode(int[] bits){
@@ -193,9 +194,7 @@ public class FSKModule {
 	
 	private int decodeUniqueMessage(int[] bits){
 		// start bit
-		Log.w(TAG, "ESTOY DENTRO Y ENTRO EN findStartBit");
 		int index = findStartBit(bits, 0);
-		Log.w(TAG, "SALGO De findStartBit:"+index);
 		if (index == -1) return -1; // no start-bit detected
 		if (index + 8 + 2 > bits.length)
 			throw new AndroinoException("Message cutted, start bit at " + index, AndroinoException.TYPE_FSK_DECODING_ERROR);
@@ -208,18 +207,12 @@ public class FSKModule {
 		}
 		// stop bit: do nothing
 		// end bit: do nothing
-		String msg="INDEX:"+index+"  VALUE:"+value;
-		Log.w(TAG, msg);
-		
-		
-		
 		return value;
 		
 	}
 
 	private int findStartBit(int[] bits, int startIndex){
 		// find carrier and start bit
-		Log.w(TAG, "ESTOY DENTRO");
 		int index = startIndex;
 		int highCounter = 0;		
 		boolean startBitDetected = false;
@@ -261,6 +254,7 @@ public class FSKModule {
 		int[] bits = new int[nBits];
 		//i = findNextZero(peaks,i); // do not search for silence
 		i = findNextNonZero(peaks,i);
+		int nonZeroIndex = i;
 		if (i+ SLOTS_PER_BIT >= peaks.length) //non-zero not found
 			return bits;
 		do {
@@ -290,8 +284,15 @@ public class FSKModule {
 			
 			
 		} while (SLOTS_PER_BIT+i<peaks.length);
-		Log.w(TAG, "parseBits lows=" + lowCounter);
-		Log.w(TAG, "parseBits highs=" + highCounter);
+		lowCounter = lowCounter - highCounter;
+		debugInfo("parseBits nonZeroIndex=" + nonZeroIndex);
+		debugInfo("parseBits lows=" + lowCounter);
+		debugInfo("parseBits highs=" + highCounter);
+		
+		for (int j = nonZeroIndex; j < peaks.length; j++) {
+			message += j + ":" + peaks[j] +"\n";
+		}
+		debugInfo("parseBits bits[]=" + message);
 		
 		// message+="SLOTS_PER_BIT+i<peaks.length"+(SLOTS_PER_BIT+i<peaks.length);
 		/*for (int j = 0; j < bits.length; j++) {
@@ -360,14 +361,17 @@ public class FSKModule {
 		int[] nPeaks = new int[nParts]; 
 		int startIndex = 0;
 		int i = 0;
+		int peakCounter = 0;
 		do {
 			int endIndex = startIndex + nPoints;
 			int n = this.countPeaks(sound, startIndex, endIndex);
 			nPeaks[i] = n;
+			peakCounter += n;
 			i++;
 			startIndex = endIndex;
 		} while (i<nParts);
 		//} while (startIndex+nPoints<sound.length);
+		debugInfo("processSound() peaksCounter=" + peakCounter);
 		return nPeaks;
 	}
 	private int countPeaks(double[] sound, int startIndex, int endIndex){
@@ -401,17 +405,16 @@ public class FSKModule {
 	public static int decodeSound(double[] sound){
 		FSKModule m = new FSKModule();
 		// processing sound in parts and
-		Log.w(TAG, "ENTRO EN processound");
+		//Log.w(TAG, "ENTRO EN processound");
 		int[] nPeaks = m.processSound(sound);//---------------------> OK!!
-		Log.i(TAG, "decodeSound nPeaks=" + nPeaks.length);
+		//debugInfo("decodeSound nPeaks=" + nPeaks.length);
 		// transform number of peaks into bits 
-		Log.w(TAG, "ENTRO EN parseBits");
+		//Log.w(TAG, "ENTRO EN parseBits");
 		int[] bits = m.parseBits(nPeaks);//-------------------------> OK!!
-		Log.i(TAG, "decodeSound nBits=" + bits.length);
+		//debugInfo("decodeSound nBits=" + bits.length);
 		// extract message from the bit array
-		Log.w(TAG, "ENTRO EN decodeUniqueMessage");
 		int message = m.decodeUniqueMessage(bits);
-		Log.w(TAG, "VALUE"+message);
+		debugInfo("decodeSound(): message="+message);
 		
 		int counter = 0;
 		for (int i = 0; i < nPeaks.length; i++) {
@@ -419,14 +422,12 @@ public class FSKModule {
 		}
 		if (message<0 && counter>10){
 			AndroinoException ae = new AndroinoException("ERROR decodeSound()", AndroinoException.TYPE_FSK_DEBUG);
-			/*
 			Vector v = new Vector();
 			v.add(sound);
 			v.add(nPeaks);
 			v.add(bits);
 			v.add(""+message);
 			ae.setDebugInfo(v);
-			*/
 			throw ae;
 		}
 		return message;
