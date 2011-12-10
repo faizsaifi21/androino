@@ -9,13 +9,15 @@ import android.util.Log;
 
 public class FSKDecoder extends Thread {
 
-	private static int MINIMUM_BUFFER = 4;
+	private static int MINIMUM_BUFFER = 4; // 2 factor, 16000 acq
+	private static int MAXIMUM_BUFFER = 6*2;
+
 	
+	private boolean signalDetected = false;
 	private boolean forceStop;
 	private Handler mClientHandler;
 	private Vector<byte[]> mSound; 
 	private static String TAG = "FSKDecoder";
-	private boolean debugAddSoundDisabled = false;
 		
 	public FSKDecoder(Handler handler){
 		this.mClientHandler = handler;
@@ -28,11 +30,17 @@ public class FSKDecoder extends Thread {
 		while (!this.forceStop) {
 			
 			try {
-				//if (signalAvailable()){
-				if (soundAvailable()){
-					decodeSound();
-				} else
-					Thread.sleep(200*1);
+				// warning: if decode sound takes too much time/processing (as debugging a long array)
+				// this loop stops working
+
+				if (signalDetected()){
+					if (messageAvailable()){
+						decodeSound();
+					} else 
+						Thread.sleep(1*100); // wait to acq enough sound
+				} else 
+					Thread.sleep(50); // wait for the next sound acq
+					
 			} catch (InterruptedException e) {
 				Log.e("FSKDecoder:run", "error", e);
 				e.printStackTrace();
@@ -45,55 +53,70 @@ public class FSKDecoder extends Thread {
 		this.forceStop = true;
 	}
 	
-	private synchronized boolean soundAvailable(){
+	private synchronized boolean messageAvailable(){
 		boolean available = false;
 		if (this.mSound.size()>=MINIMUM_BUFFER) available = true;
-		Log.v(TAG, "soundAvailable()=" + available);
+		Log.v(TAG, "messageAvailable()=" + available);
 		return available;
 	}
-	private boolean signalAvailable(){
-		if (soundAvailable()){
-			// there is sound in the buffer
-			byte[] sound = this.mSound.elementAt(0);
-			double data[] = this.byte2double(sound);
-			boolean available = FSKModule.signalAvailable(data);
-			if (available) return true; // signal recognized
-			// signal not recognized, removing sound from the buffer
-			clearFirstSound();
-			return false;
-		} else return false;
+	private boolean signalDetected(){
+		if (!signalDetected) {
+			byte[] sound = this.getSound();
+			if ( sound!= null) {
+				double data[] = this.byte2double(sound);
+				signalDetected = FSKModule.signalAvailable(data);
+				if (signalDetected) Log.w(TAG, "signalDetected() TRUE"); 
+			}
+		}
+		Log.i(TAG, "signalDetected()=" + this.signalDetected);
+		return signalDetected;
 	}
-	
+
 	public synchronized void addSound(byte[] sound, int nBytes){
-		if (debugAddSoundDisabled) return;
 		byte[] data = new byte[nBytes];
 		for (int i = 0; i < nBytes; i++) {
 			data[i] = sound[i];
 		}
 		this.mSound.add(data);
 		Log.i(TAG, "addSound nBytes="+ nBytes + " accumulated=" + this.mSound.size());
+		
+		if (this.mSound.size() > MAXIMUM_BUFFER ){
+			Log.e(TAG, "ERROR addSound() buffer overflow size=" + this.mSound.size());
+			// reset state and cleaning the buffer
+			this.signalDetected = false;
+			this.mSound.clear();
+		}
 	}
 	
-	private synchronized void clearFirstSound(){
-		this.mSound.remove(0);
+	
+	private synchronized byte[] getSound(){
+		// returns the first sound part and removes it from the buffer
+		// or null if there is no sound in the buffer
+		if (this.mSound.size()>0)
+			return (byte[])this.mSound.remove(0);
+		else
+			return null;
 	}
 	
-	private synchronized byte[] consumeSound(){
+	private synchronized byte[] consumeSoundMessage(){
 		int counter = 0;
-		for (int i = 0; i < this.mSound.size(); i++) {
+		for (int i = 0; i < MINIMUM_BUFFER ; i++) {
 			counter += this.mSound.elementAt(i).length;
 		}
 		byte[] sound = new byte[counter];
-		counter = 0;
-		for (int i = 0; i < this.mSound.size(); i++) {
+		
+		
+		counter = 0; // removing the first block (carrier)
+		for (int i = 0; i < MINIMUM_BUFFER ; i++) {
 			byte[] s = this.mSound.elementAt(i);
 			for (int j = 0; j < s.length; j++) {
 				sound[counter+j] = s[j];
 			}
-			counter = s.length;
+			counter += s.length;
 		}
 		this.mSound.clear();
-		Log.d(TAG, "consumeSound() nBytes=" + sound.length);
+		this.signalDetected = false;
+		Log.i(TAG, "FSKDEC:consumeSound() nBytes=" + sound.length);
 		return sound;
 	}
 	private void saveAudioToFile(String header, byte[] audioData) {
@@ -112,35 +135,27 @@ public class FSKDecoder extends Thread {
 	}
 
 	private double[] byte2double(byte[] data){
-		double d[] = new double[data.length];
-		String header="DATA:";
-		//saveAudioToFile(header, data);
-		
+		double d[] = new double[data.length/2];
 		ByteBuffer buf = ByteBuffer.wrap(data, 0, data.length);
 		buf.order(ByteOrder.LITTLE_ENDIAN);
 		int counter = 0;
 		while (buf.remaining() >= 2) {
-			
 			double s = buf.getShort();
-			
 			d[counter] = s;
 			counter++;
 		}
-				
 		return d;
-		
 	}
 	
 	
 	private void decodeSound(){
-		byte[] sound = consumeSound();
+		byte[] sound = consumeSoundMessage();
 		Log.i(TAG, "decodeSound: length=" + sound.length);
 		//this.decodeAmplitude(sound, sound.length);
 		this.decodeFSK(sound);
 	}
 	private void debugAndroinoException(AndroinoException ae){
 		if (ae.getType() == AndroinoException.TYPE_FSK_DEBUG){
-			this.debugAddSoundDisabled = true;
 			Vector info = (Vector) ae.getDebugInfo();
 			double[] sound = (double[]) info.get(0);
 			int[] nPeaks = (int[]) info.get(1);
@@ -173,7 +188,7 @@ public class FSKDecoder extends Thread {
 		Log.i(TAG, "decodeFSK: doubles length=" + sound.length);
 		try {
 			int message = FSKModule.decodeSound(sound);
-			Log.w(TAG, "decodeFSK():message=" + message);
+			Log.w(TAG, "decodeFSK():message=" + message + ":" + Integer.toBinaryString(message));
 			if (message >0)
 			this.mClientHandler.obtainMessage(ArduinoService.HANDLER_MSG_RECEIVED, message, 0).sendToTarget();
 		} 

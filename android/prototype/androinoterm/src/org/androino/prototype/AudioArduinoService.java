@@ -17,7 +17,7 @@ public class AudioArduinoService extends ArduinoService {
 	private static final int GT540_SAMPLE_FREQ = 44100;
 	private static final int DEVEL_SAMPLE_FREQ = 8000;
 	private static final int AUDIO_SAMPLE_FREQ = GT540_SAMPLE_FREQ ;
-	public static int ACQ_AUDIO_BUFFER_SIZE = 44100/2;		
+	public static int ACQ_AUDIO_BUFFER_SIZE = 16000; 	
 
 	public static int SOFT_MODEM_HIGH_FREQ = 3150;
 	public static int SOFT_MODEM_LOW_FREQ = 1575;

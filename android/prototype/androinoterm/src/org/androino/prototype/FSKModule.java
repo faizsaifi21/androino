@@ -9,6 +9,11 @@ import java.util.Vector;
 import android.util.Log;
 
 public class FSKModule {
+	// Experimental results
+	// Arduino sends "a" character (97) 1100001 
+	// The generated message is 0110.0001
+	// 136 samples per encoded bit
+	// total message = 166 bits: 155(high)+1(low)+8bit+stop(high)+end(high)
 	
 	private static int BUFFER_SIZE	= 30000;
 	private static int SAMPLING_FREQUENCY = 44100; //Hz
@@ -28,8 +33,8 @@ public class FSKModule {
 
 	// bit-high = 22 peaks
 	// bit-low = 6 peaks
-	private static int HIGH_BIT_N_PEAKS = 22;
-	private static int LOW_BIT_N_PEAKS = 6;
+	private static int HIGH_BIT_N_PEAKS = 12;
+	private static int LOW_BIT_N_PEAKS = 7;
 	
 	private static int SLOTS_PER_BIT = 4; // 4 parts: determines the size of the part analyzed to count peaks
 	private static int N_POINTS = SAMPLES_PER_BIT/SLOTS_PER_BIT;  // 34=136/4
@@ -37,7 +42,7 @@ public class FSKModule {
 	private static double PEAK_AMPLITUDE_TRESHOLD = 60; // significative sample (not noise)
 	private static int NUMBER_SAMPLES_PEAK = 4;			// minimum number of significative samples to be considered a peak
 
-	private static int MINUMUM_NPEAKS = 100;
+	private static int MINUMUM_NPEAKS = 100; // if lower it means that there is no signal/message
 	
 	private static final int BIT_HIGH_SYMBOL=2;
 	private static final int BIT_LOW_SYMBOL=1;
@@ -55,7 +60,7 @@ public class FSKModule {
 	
 	private static void debugInfo(String message){
 		//System.out.println(">>" + message);
-		Log.w(TAG, message);
+		Log.w(TAG, "FSKDEC:"+ message);
 	}
 
 	public static double[] encode(int[] bits){
@@ -191,12 +196,68 @@ public class FSKModule {
 		}
 	}
 	
-	private int decodeUniqueMessage(int[] bits){
+	private int decodeUniqueMessageCorrected(int[] nPeaks, int startBit){
+		int message = 0;
+		
+		// process nPeaks starting from the end  
+		int index = (startBit+12)*SLOTS_PER_BIT;
+		
+		// find zero -> non zero transition
+		for (int i = 0; i < index; i++) {
+			int i2 = nPeaks[index-i];
+			int i1 = nPeaks[index-i-1];
+			debugInfo("zero->nonzero index=" + (index-i) + ": i2=" + i2 + ":i1=" + i1);
+			if ( (i1-i2)>2) {
+				index = index-i-1;
+				break;
+			}
+		}
+		debugInfo("zero->nonzero index=" + index);
+		int[] bits = new int[2+8+1+2];
+		for (int i = 0; i < bits.length; i++) {
+			int peakCounter = 0;
+			for (int j = 0; j < 4; j++) {
+				peakCounter += nPeaks[index-j]; 
+			}
+			debugInfo("decode corrected: peakCounter="+i + ":" + peakCounter);
+			if (peakCounter > 7)  { //LOW_BIT_N_PEAKS)
+				bits[i] = BIT_LOW_SYMBOL;
+			}
+			if (peakCounter > 12)  { //LOW_BIT_N_PEAKS)
+				bits[i] = BIT_HIGH_SYMBOL;
+				message += Math.pow(2, i);
+			}
+			debugInfo("bit=" + bits[i] + ":" + message);
+			index = index -4;
+		}
+		debugInfo("decode corrected: message="+message + ":" + Integer.toBinaryString(message));
+		message = 0;
+		for (int i = 2; i < 10; i++) {
+			if ( bits[i] == BIT_HIGH_SYMBOL) {
+				message+= Math.pow(2, 7-(i-2));
+			}
+		}
+		return message;
+	}
+	
+	private int decodeUniqueMessage(int[] bits, double[] sound, int[] nPeaks){
 		// start bit
 		int index = findStartBit(bits, 0);
+		debugInfo("decodeUniqueMessage():start bit=" + index);
 		if (index == -1) return -1; // no start-bit detected
 		if (index + 8 + 2 > bits.length)
 			throw new AndroinoException("Message cutted, start bit at " + index, AndroinoException.TYPE_FSK_DECODING_ERROR);
+	
+		
+		// debugging information
+		int number = 16; // n bits to debug
+		for (int i = index-5; i < index-5+number; i++) {
+			debugInfo("decodeUniqueMessage(): bits=" + i +":" + bits[i] );
+		}
+		for (int i = 0; i < number*SLOTS_PER_BIT; i++) {
+			int position = i + (index-5)*SLOTS_PER_BIT ;
+			debugInfo("decodeUniqueMessage(): npeaks=" + position+ ":" + nPeaks[position] );
+		}
 		
 		// 8bits message
 		int value = 0;
@@ -206,7 +267,11 @@ public class FSKModule {
 		}
 		// stop bit: do nothing
 		// end bit: do nothing
-		return value;
+		int correctedMessage = decodeUniqueMessageCorrected(nPeaks,index);
+		debugInfo("MESSAGE corrected=" + Integer.toBinaryString(correctedMessage) + ":" + correctedMessage);
+		debugInfo("MESSAGE          =" + Integer.toBinaryString(value) + ":" + value);
+		//return value;
+		return correctedMessage;
 		
 	}
 
@@ -265,14 +330,14 @@ public class FSKModule {
 			int position = i/SLOTS_PER_BIT;
 			bits[position] = BIT_NONE_SYMBOL;
 			
-			//Log.w(TAG, "parseBits NPEAK=" + nPeaks);
 			
-			if (nPeaks>= 7) {
+			debugInfo("npeaks:i=" + i + ":pos=" + position+ ": nPeaks=" + nPeaks);
+			if (nPeaks>= LOW_BIT_N_PEAKS) {
 				//Log.w(TAG, "parseBits NPEAK=" + nPeaks);
 				bits[position] = BIT_LOW_SYMBOL;
 				lowCounter++;
 			}
-			if (nPeaks>=13 ) {
+			if (nPeaks>=HIGH_BIT_N_PEAKS ) {
 				bits[position] = BIT_HIGH_SYMBOL;
 				highCounter++;
 			}
@@ -347,8 +412,10 @@ public class FSKModule {
 			nPeaks += n;
 			i++;
 			startIndex = endIndex;
-			if (nPeaks > 2*HIGH_BIT_N_PEAKS) return true;
+			if (nPeaks > MINUMUM_NPEAKS) return true;
 		} while (i<nParts);
+		if (nPeaks >3)
+			debugInfo("signalAvailable() nPeaks=" + nPeaks);
 		return false;
 	}
 	
@@ -408,7 +475,7 @@ public class FSKModule {
 	public static int decodeSound(double[] sound){
 		FSKModule m = new FSKModule();
 		// processing sound in parts and
-		//Log.w(TAG, "ENTRO EN processound");
+		//Log.w(TAG, "ENTRO EN processSound");
 		int[] nPeaks = m.processSound(sound);
 		if (nPeaks.length == 0) // exit: no signal detected 
 			return -1;
@@ -419,9 +486,10 @@ public class FSKModule {
 		int[] bits = m.parseBits(nPeaks);//-------------------------> OK!!
 		//debugInfo("decodeSound nBits=" + bits.length);
 		// extract message from the bit array
-		int message = m.decodeUniqueMessage(bits);
-		debugInfo("decodeSound(): message="+message);
+		int message = m.decodeUniqueMessage(bits, sound, nPeaks);
+		debugInfo("decodeSound(): message="+message + ":" + Integer.toBinaryString(message));
 		
+/*		
 		int counter = 0;
 		for (int i = 0; i < nPeaks.length; i++) {
 			counter+= nPeaks[i];
@@ -436,6 +504,7 @@ public class FSKModule {
 			ae.setDebugInfo(v);
 			throw ae;
 		}
+*/
 		return message;
 	}
 
@@ -516,7 +585,7 @@ public class FSKModule {
 			//	debugInfo("msg="+ msg);
 			//}
 			// decode bits
-			int msg = m.decodeUniqueMessage(bits);
+			int msg = m.decodeUniqueMessage(bits, sound, nPeaks);
 			debugInfo("msg=" + msg);
 			
 //}

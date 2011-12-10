@@ -53,9 +53,9 @@ public class MainActivity extends Activity {
         private void messageReceived(Message msg){
                 switch (msg.what) {
                 case ArduinoService.HANDLER_MSG_RECEIVED:
-                        String str1 = Integer.toHexString(msg.arg1 & 0xFF);
-                        Log.i("MainActivity:handleMessage", str1);
-                        showInfo("handle message:" + msg.arg1);
+                        String info = Integer.toBinaryString(msg.arg1) + ":" + msg.arg1;
+                        Log.i("MainActivity:handleMessage", info);
+                        showInfo(info);
                         break;
                 case ArduinoService.HANDLER_MSG_STOPPED:
                         showInfo("STOP message:" + msg.arg1);
@@ -66,6 +66,13 @@ public class MainActivity extends Activity {
                 }
                 
         }
+        private void showText(String text){
+    		TextView txt = (TextView) findViewById(R.id.received_text);
+    		CharSequence chs = txt.getText();
+        	
+        }
+        
+        
         private void showInfo(String message){
         	// do not show a toast if a previous is still showing
         	long time = new Date().getTime();
