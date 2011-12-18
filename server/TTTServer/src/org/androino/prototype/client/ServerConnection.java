@@ -80,7 +80,7 @@ public class ServerConnection extends Thread {
 	}
 	
 	public void sentEvent(TTTEvent event){
-		String url = this.server + "/" + NEW_EVENT_CGI + "?USER=" + this.user + "&MSG=" + event.getMessage();
+		String url = this.server + "/" + NEW_EVENT_CGI + "?USER=" + this.user + "&MSG=" + event.getEncodedMessage();
 		try {
 			String content = getURLContent(url);
 		} catch (IOException e) {

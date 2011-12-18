@@ -20,6 +20,7 @@ public class TTTServer implements iTTTEventListener{
 	}
 	public void stop(){
 		this.server.stopAndClean();
+		instance = null;
 	}
 	
 	protected void notifyEvent(String eventMessage){
