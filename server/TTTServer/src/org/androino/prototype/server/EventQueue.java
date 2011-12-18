@@ -1,18 +1,3 @@
-/*
- * Copyright (C) 2011 Androino authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.androino.prototype.server;
 
 import java.util.Date;
@@ -30,6 +15,8 @@ public class EventQueue {
 	private Date lastDateBPlayer = new Date();
 	private boolean lastEventAConsumed = false;
 	private boolean lastEventBConsumed = false;
+	
+	private String lastUserAssigned = "";
 
 	public static String NO_EVENT_TOKEN = "OK";
 	public static String CONNECT_EVENT_TOKEN = "CONNECT";
@@ -44,11 +31,13 @@ public class EventQueue {
 	}
 
 	public String connectEvent() {
-		// initial event: register the users, assigns and returns an user id
-		String user = this.idAPlayer; // assigned A by default
-		if (lastEventAPlayer.equals(CONNECT_EVENT_TOKEN)) {
-			user = this.idBPlayer;
-		}
+		// assigns a different user each time is called;
+		//FIXME in case connection is lost, when reconnected assign the not connected user id  
+		String user = this.idAPlayer;
+		if (this.lastUserAssigned.equals(this.idAPlayer))
+			user = this.idBPlayer; 
+		this.lastUserAssigned = user;
+		
 		this.addEvent(user, CONNECT_EVENT_TOKEN);
 		return user;
 	}
@@ -88,7 +77,8 @@ public class EventQueue {
 	}
 	
 	public String debugInfo(){
-		String info = "DEBUG:" + new Date().getTime() + "<br>";  
+		String info = "DEBUG:" + new Date().getTime() + "<br>";
+		info+= "LAST user assigned=" + this.lastUserAssigned + "<br>";
 		info+= idAPlayer + "=" + this.lastEventAPlayer + ":" + this.lastDateAPlayer.getTime() + "=>" + this.lastEventAConsumed + "<br/>";
 		info+= idBPlayer + "=" + this.lastEventBPlayer + ":" + this.lastDateBPlayer.getTime() + "=>" + this.lastEventBConsumed + "<br/>";
 		return info;
