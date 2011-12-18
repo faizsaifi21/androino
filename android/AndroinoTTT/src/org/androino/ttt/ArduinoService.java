@@ -53,7 +53,7 @@ public class ArduinoService implements Runnable {
 		//this.audioRecordingRun();
 		dummyRecordingRun();
 	}
-
+	
 	public void write(int message) {
 		encodeMessage(message);
 	}
