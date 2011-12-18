@@ -1,3 +1,18 @@
+/*		
+* Copyright (C) 2011 Androino authors		
+*		
+* Licensed under the Apache License, Version 2.0 (the "License");		
+* you may not use this file except in compliance with the License.		
+* You may obtain a copy of the License at		
+*		
+*      http://www.apache.org/licenses/LICENSE-2.0		
+*		
+* Unless required by applicable law or agreed to in writing, software		
+* distributed under the License is distributed on an "AS IS" BASIS,		
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.		
+* See the License for the specific language governing permissions and		
+* limitations under the License.		
+*/
 package org.androino.tttserver.client;
 
 import java.io.BufferedReader;
@@ -66,26 +81,20 @@ public class ServerConnection extends Thread {
 			e.printStackTrace();
 		}
 	}
-/*
-	
-	private void sendMessage(int arg1, int arg2){
-		if (mClientHandler != null) {
-			//this.mClientHandler.obtainMessage(HANDLER_MSG_RECEIVED, arg1, arg2).sendToTarget();
-		}
-	}
-*/
 	
 	public void stopAndClean(){
 		this.forceStop = true;
 	}
 	
-	public void sentEvent(TTTEvent event){
+	public String sentEvent(TTTEvent event){
 		String url = this.server + "/" + NEW_EVENT_CGI + "?USER=" + this.user + "&MSG=" + event.getEncodedMessage();
 		try {
 			String content = getURLContent(url);
+			return content;
 		} catch (IOException e) {
 			e.printStackTrace();
 			this.mClientHandler.notifyEvent("ERROR:" + e.getMessage());
+			return null;
 		}
 	}
 

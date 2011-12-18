@@ -1,11 +1,24 @@
+/*		
+* Copyright (C) 2011 Androino authors		
+*		
+* Licensed under the Apache License, Version 2.0 (the "License");		
+* you may not use this file except in compliance with the License.		
+* You may obtain a copy of the License at		
+*		
+*      http://www.apache.org/licenses/LICENSE-2.0		
+*		
+* Unless required by applicable law or agreed to in writing, software		
+* distributed under the License is distributed on an "AS IS" BASIS,		
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.		
+* See the License for the specific language governing permissions and		
+* limitations under the License.		
+*/
+
 package org.androino.tttserver.client;
 
 import java.util.StringTokenizer;
 
 public class TTTEvent {
-
-	// TODO add function getValue to recover the int value
-	// TODO set private get/setMessage()
 
 	public static final int TYPE_SERVER_ERROR = -1;
 	public static final int TYPE_BUTTON_CLICK = 0;
@@ -20,28 +33,6 @@ public class TTTEvent {
 	public TTTEvent(int type, String message) {
 		this.type = type;
 		this.message = message;
-/*		
-		switch (type) {
-		case TYPE_SERVER_ERROR:
-			this.setMessage("ERROR_" + message);
-			break;
-		case TYPE_BUTTON_CLICK:
-			this.setMessage("B_" + message);
-			break;
-		case TYPE_STARTGAME_CLICK:
-			this.setMessage("START");
-			break;
-		case TYPE_CONNECT:
-			this.setMessage("CONNECT");
-			break;
-		case TYPE_DISCONNECT:
-			this.setMessage("DISCONNECT");
-			break;
-		case TYPE_ENDGAME:
-			this.setMessage("END_" + message);
-			break;
-		}
-*/
 	}
 
 	public static TTTEvent parseEvent(String token) {
@@ -97,16 +88,8 @@ public class TTTEvent {
 		return type;
 	}
 
-	public void setType(int type) {
-		this.type = type;
-	}
-
 	public String getMessage() {
 		return message;
-	}
-
-	private void setMessage(String message) {
-		this.message = message;
 	}
 
 	public String toString() {

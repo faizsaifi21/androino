@@ -1,15 +1,29 @@
+/*		
+* Copyright (C) 2011 Androino authors		
+*		
+* Licensed under the Apache License, Version 2.0 (the "License");		
+* you may not use this file except in compliance with the License.		
+* You may obtain a copy of the License at		
+*		
+*      http://www.apache.org/licenses/LICENSE-2.0		
+*		
+* Unless required by applicable law or agreed to in writing, software		
+* distributed under the License is distributed on an "AS IS" BASIS,		
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.		
+* See the License for the specific language governing permissions and		
+* limitations under the License.		
+*/
+
 package org.androino.ttt;
 
-import org.androino.prototype.client.TTTEvent;
-import org.androino.prototype.client.TTTServer;
-import org.androino.prototype.client.iTTTEventListener;
+import org.androino.tttserver.client.TTTEvent;
+import org.androino.tttserver.client.TTTServer;
+import org.androino.tttserver.client.iTTTEventListener;
 
-import android.app.Activity;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.widget.RadioButton;
-import android.widget.Toast;
 
 public class TicTacToe implements iTTTEventListener{
 
@@ -122,68 +136,4 @@ public class TicTacToe implements iTTTEventListener{
 		}
 	}
 		
-/*		
-		//TODO  process messages from arduino and from server
-		Log.w(TAG, "messageReceived()=" + msg.arg1);
-		this.mActivity.showDebugMessage("messageReceived()=" + msg.arg1);
-		// message received from the arduino
-		int message = msg.arg1;
-		if (message>100)
-			return;
-		
-		switch (message) {
-		case ARDUINO_MSG_START_GAME:
-			this.mServer.startGameClick();
-			break;
-		case ARDUINO_MSG_END_GAME_WINNER:
-			this.mServer.endGame("0");
-			break;
-		case ARDUINO_MSG_END_GAME_LOSER:
-			this.mServer.endGame("1");
-			break;
-		default:
-			this.mServer.buttonClick(""+message);
-			break;
-		}
-	}
-
-	@Override
-	public void eventReceived(TTTEvent event) {
-		//TODO: convert events to handler messages
-		String message = event.getMessage();
-		Log.w(TAG, "eventReceived()=" + message);
-		// event received from the TTT Server
-		int number = 0; 
-		try {
-			int index = message.indexOf("_");
-			//if (index > -1 )
-			//	message = message.substring(index+1, message.length() -index +1);
-			
-			number = Integer.parseInt(message);
-		} catch (Exception e) {
-			e.printStackTrace();
-			number = -1;
-		}
-		
-		this.mHandler.obtainMessage(HANDLER_MESSAGE_FROM_SERVER, 1000+number, 0).sendToTarget();
-		
-		int msg = 0;
-		switch (event.getType()) {
-		case TTTEvent.TYPE_BUTTON_CLICK:
-			msg = 0;
-			break;
-		case TTTEvent.TYPE_STARTGAME_CLICK:
-			msg = ARDUINO_MSG_START_GAME;
-			break;
-		case TTTEvent.TYPE_ENDGAME:
-			if (message.equals("1")) 
-				msg = ARDUINO_MSG_END_GAME_WINNER;
-			else 
-				msg = ARDUINO_MSG_END_GAME_LOSER;
-		default:
-			break;
-		}
-		//this.mArduinoS.write(msg);
-	}
-*/	
 }
