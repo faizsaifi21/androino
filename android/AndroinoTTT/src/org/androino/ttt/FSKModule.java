@@ -75,9 +75,25 @@ public class FSKModule {
 // ENCODING FUNCTIONS
 //-----------------------------------------	
 	
-	public static double[] encode(int[] bits){
+	public static double[] encode(int number){
 		FSKModule m = new FSKModule();
+		debugInfo("encode: number=" + number + " binary=" + Integer.toBinaryString(number));
+		int[] bits = m.get8Bits(number);
+		//for (int i = 0; i < bits.length; i++) {
+		//	debugInfo("encode: number bit=" + bits[i] );
+		//}
 		return m.encodeMessage(bits);
+	}
+	private int[] get8Bits(int number){
+		int[] bits = new int[8];
+		for (int i = 0; i < 8; i++) {
+			int mask = (int) Math.pow(2,i);
+			int value = (number&mask) >>> i;
+			//debugInfo("encode: value=" + value+ " binary=" + Integer.toBinaryString(value));
+			if (value==1) bits[i] = BIT_HIGH_SYMBOL;
+			else bits[i] = BIT_LOW_SYMBOL;
+		}
+		return bits;
 	}
 	                     
 	private double[] encodeMessage(int[]bits){
