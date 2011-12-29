@@ -35,6 +35,7 @@ public class ArduinoService implements Runnable {
 	private static final String TAG = "ArduinoService";
 	
 	private Handler mClientHandler;
+	private FSKDecoder mDecoder;
 	private boolean forceStop = false;
 	public static final int HANDLER_MESSAGE_FROM_ARDUINO = 2000;
 	
@@ -46,12 +47,14 @@ public class ArduinoService implements Runnable {
 	public void run() {
 		this.forceStop = false;
 		// Decoder initialization
-		//this.mDecoder = new FSKDecoder(this.mClientHandler);
-		//this.mDecoder.start();
+		this.mDecoder = new FSKDecoder(this.mClientHandler);
+		this.mDecoder.start();
 		
 		// Sound recording loop
-		//this.audioRecordingRun();
-		dummyRecordingRun();
+		this.audioRecordingRun();
+		
+		// DEVELOPMENTDUMMYARDUINO
+		//dummyRecordingRun();
 	}
 	
 	public void write(int message) {
@@ -99,8 +102,9 @@ public class ArduinoService implements Runnable {
 				Log.e(TAG, "read error=" + nBytes);
 				break; // error happened
 			}
-//this.mDecoder.addSound(audioData, nBytes);
+			this.mDecoder.addSound(audioData, nBytes);
 			if (this.forceStop) {
+				this.mDecoder.stopAndClean();
 				break;
 			}
 		}
@@ -122,9 +126,7 @@ public class ArduinoService implements Runnable {
 		aT.play();
 
 		// sound encoding
-		/*
-		int[] bits = this.getBits(value);
-		double[] sound = FSKModule.encode(bits);
+		double[] sound = FSKModule.encode(value);
 		Log.i(TAG, "encodeMessage() message=" + value);
 		ByteBuffer buf = ByteBuffer.allocate(4 * sound.length);
 		buf.order(ByteOrder.LITTLE_ENDIAN);
@@ -138,7 +140,6 @@ public class ArduinoService implements Runnable {
 		int nBytes = aT.write(tone, 0, tone.length);
 		aT.stop();
 		aT.release();
-*/
 	}
 
 	

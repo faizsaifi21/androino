@@ -74,9 +74,10 @@ public class TicTacToe implements iTTTEventListener{
 		this.mArduinoS = new ArduinoService(this.mHandler);
 		new Thread(this.mArduinoS).start();
 		// CONNECT to the TTT Server
-		this.mServer = TTTServer.getInstance();
-		this.mServer.registerEventListener(this);
-		this.mServer.start();
+		// DEVELOPMENT:SERVERDISABLED	
+		//this.mServer = TTTServer.getInstance();
+		//this.mServer.registerEventListener(this);
+		//this.mServer.start();
 	}
 	
 	@Override
@@ -91,6 +92,10 @@ public class TicTacToe implements iTTTEventListener{
 		int value = msg.arg1;
 		int type = msg.arg2;
 		Log.w(TAG, "messageReceived(): target=" + target + " value=" + value + " type=" + type);
+		
+		// DEVELOPMENT:SERVERDISABLED
+		if (true) return;
+		
 		switch (target) {
 		case HANDLER_MESSAGE_FROM_SERVER:
 			int msgCode = value;
@@ -134,6 +139,10 @@ public class TicTacToe implements iTTTEventListener{
 			//FIXME error happened handling messages
 			break;
 		}
+	}
+	
+	protected void developmentSendMessage(int number){
+		this.mArduinoS.write(number);
 	}
 		
 }

@@ -51,7 +51,18 @@ public class MainActivity extends Activity{
 					mTTT.start();
 			}
 		});
-		
+		final Button sendB = (Button) findViewById(R.id.SendButton);
+		sendB.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				try {
+					TextView txt = (TextView) findViewById(R.id.NumberText);
+					int number = Integer.parseInt(""+txt.getText()); 
+					mTTT.developmentSendMessage(number);
+				} catch (Exception e) {
+					showDebugMessage("ERROR happened, check number format",true);
+				}
+			}
+		});
 	}
 
 	protected void onPause() {

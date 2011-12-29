@@ -8,16 +8,26 @@
 	android:id="@+id/Text"
     android:layout_width="fill_parent" 
     android:layout_height="wrap_content" 
-    android:text="@string/hello"
+    android:text="Tic-Tac-Toe APP"
     />
 
-<TableLayout android:id="@+id/TableLayout01" android:layout_width="wrap_content" android:layout_height="wrap_content"></TableLayout>
+<TableLayout android:id="@+id/TableLayout01" android:layout_width="wrap_content" android:layout_height="wrap_content">
 <TableRow android:id="@+id/TableRow01" android:layout_width="wrap_content" android:layout_height="wrap_content">
 <Button android:text="START/STOP" android:id="@+id/Button" android:layout_width="wrap_content" android:layout_height="wrap_content"></Button>
 <RadioButton android:text="Running" android:id="@+id/RadioButton01" android:layout_width="wrap_content" android:layout_height="wrap_content"></RadioButton>
 </TableRow>
 
+</TableLayout>
 
 
 
+<TextView android:text="DEVELOPMENT OPTIONS" android:id="@+id/TextView01" android:layout_width="wrap_content" android:layout_height="wrap_content"></TextView>
+<TextView android:text="Enter number [0-32]" android:id="@+id/TextView02" android:layout_width="wrap_content" android:layout_height="wrap_content"></TextView>
+<TableLayout android:id="@+id/TableLayout01" android:layout_width="wrap_content" android:layout_height="wrap_content">
+<TableRow android:id="@+id/TableRow01" android:layout_width="wrap_content" android:layout_height="wrap_content">
+<EditText android:text="" android:width="25mm" android:id="@+id/NumberText" android:layout_width="wrap_content" 
+android:layout_height="wrap_content"></EditText>
+<Button android:text="SEND" android:id="@+id/SendButton" android:layout_width="wrap_content" android:layout_height="wrap_content"></Button>
+</TableRow>
+</TableLayout>
 </LinearLayout>
