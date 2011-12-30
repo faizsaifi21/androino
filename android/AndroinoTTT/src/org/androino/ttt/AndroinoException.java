@@ -17,6 +17,7 @@ package org.androino.ttt;
 
 public class AndroinoException extends RuntimeException {
 
+	private static final long serialVersionUID = 1L;
 	public static final int TYPE_FSK_DECODING_ERROR = 1001;
 	public static final int TYPE_FSK_DEBUG = 1002;
 	
