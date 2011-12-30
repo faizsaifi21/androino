@@ -18,7 +18,10 @@
 #include <ctype.h> 
 
 #define CODE_REPEAT_LAST_MESSAGE    20
+#define CODE_ACK_MESSAGE            21
 #define MESSAGE_CHECKSUM_ERROR      -2
+#define PARITY_EVEN                 64
+#define PARITY_ODD                  32
 
 int lastMessageSent = -1;
 SoftModem modem; //create an instance of SoftModem 
@@ -49,6 +52,7 @@ void loop ()
       sendMessage(c-48); // 48=0, 49=1
     }
    }
+   // 
 }
 
 //-----------------------------------------
@@ -62,6 +66,7 @@ void sendMessage(int number){
   int msg = encodeMessage(number);
   modem.write(msg);
   lastMessageSent = msg;
+  // TODO: ACK register timestamp and resend the message if no ACK is received
 }
 
 int encodeMessage(int number){
@@ -69,14 +74,13 @@ int encodeMessage(int number){
   // Example: 3 (000.00011) => (101.00011)
   int cSum = checkSum(number);
   int msg = number + cSum;
-Serial.print("encodeMessage:number="); Serial.print(number, DEC); Serial.print(":"); Serial.println(number, BIN);
-Serial.print("encodeMessage:chk="); Serial.print(cSum, DEC); Serial.print(":"); Serial.println(cSum, BIN);
-Serial.print("encodeMessage:message="); Serial.print(msg, DEC); Serial.print(":"); Serial.println(msg, BIN);
+Serial.print("     encodeMessage:number="); Serial.print(number, DEC); Serial.print(":"); Serial.println(number, BIN);
+Serial.print("     encodeMessage:chk="); Serial.print(cSum, DEC); Serial.print(":"); Serial.println(cSum, BIN);
+Serial.print("     encodeMessage:message="); Serial.print(msg, DEC); Serial.print(":"); Serial.println(msg, BIN);
   return msg;
 }
 
 int checkSum(int number){
-  //TODO: implement checksum calculation
   // calculates the checkSum for error correction
   // simple implementation even => 010, odd =>001
   int sign = 1;
@@ -87,20 +91,21 @@ int checkSum(int number){
     }
   }
   if (sign>0)
-    return 64;
+    return PARITY_EVEN;
   else 
-    return 32; 
+    return PARITY_ODD; 
 }
 
 int decodeMessage(int message){
   // Message format: 111.11111 (3bits=checksum 5bits=information)
   int number = B00011111 & message; //extract number from message 
-  int chk = message>>5;  //extract checksum from message
-Serial.print("decodeMessage:"); Serial.print(message, DEC); Serial.print(":"); Serial.println(message, BIN);
-Serial.print("number="); Serial.print(number, DEC); Serial.print(":"); Serial.println(number, BIN);
-Serial.print("chk="); Serial.print(chk, DEC); Serial.print(":"); Serial.println(chk, BIN);
-  
+  int chk =    B11100000 & message;  //extract checksum from message
   int cSum = checkSum(number);
+Serial.print("     decodeMessage:"); Serial.print(message, DEC); Serial.print(":"); Serial.println(message, BIN);
+Serial.print("     number="); Serial.print(number, DEC); Serial.print(":"); Serial.println(number, BIN);
+Serial.print("     chk="); Serial.print(chk, DEC); Serial.print(":"); Serial.println(chk, BIN);
+Serial.print("     cSum="); Serial.print(cSum, DEC); Serial.print(":"); Serial.println(cSum, BIN);
+  
   if ( chk != cSum) {
     return MESSAGE_CHECKSUM_ERROR; // erroneus message received
   } else
@@ -123,6 +128,10 @@ int messageReceived(int message){
     case CODE_REPEAT_LAST_MESSAGE:
       // repetition required
       modem.write(lastMessageSent);
+      number = -1;
+      break;
+    case CODE_ACK_MESSAGE:
+      // TODO: implement ACK
       number = -1;
       break;
   }
