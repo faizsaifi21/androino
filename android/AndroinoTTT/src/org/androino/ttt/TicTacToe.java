@@ -29,21 +29,25 @@ public class TicTacToe implements iTTTEventListener{
 
 	private static final String TAG = "TicTacToe";
 	// arduino messages
-	// [0-9] error codes
+	// 	 [0-9] button events
 	// [10-19] specific messages
-	// [20-30] button events
+	// [20-30] protocol codes
 	
 	public static final int ARDUINO_MSG_START_GAME 		= 10;
 	public static final int ARDUINO_MSG_END_GAME_WINNER = 11;
 	public static final int ARDUINO_MSG_END_GAME_LOSER 	= 12;
-
+	public static final int ARDUINO_PROTOCOL_ARQ		= 20; //Automatic repeat request
+	public static final int ARDUINO_PROTOCOL_ACK		= 21; //Message received acknowledgment
+	
 	public static final int HANDLER_MESSAGE_FROM_SERVER = 2001;
 
+	
 	private Handler mHandler;
 	private ArduinoService mArduinoS;
 	private TTTServer mServer;
 	private MainActivity mActivity;
-
+	private int lastMessage;
+	
 	public TicTacToe(MainActivity activity){
 		this.mActivity = activity;
 		// 
@@ -93,9 +97,6 @@ public class TicTacToe implements iTTTEventListener{
 		int type = msg.arg2;
 		Log.w(TAG, "messageReceived(): target=" + target + " value=" + value + " type=" + type);
 		
-		// DEVELOPMENT:SERVERDISABLED
-		if (true) return;
-		
 		switch (target) {
 		case HANDLER_MESSAGE_FROM_SERVER:
 			int msgCode = value;
@@ -115,10 +116,19 @@ public class TicTacToe implements iTTTEventListener{
 					break;
 			}
 			this.mActivity.showDebugMessage("Received from server()=" + msgCode, false);
-			//this.mArduinoS.write(msgCode);
+			this.lastMessage = msgCode;
+			//this.sendMessage(msgCode);
 			break;
 		case ArduinoService.HANDLER_MESSAGE_FROM_ARDUINO:
 			switch (value) {
+				case ARDUINO_PROTOCOL_ARQ:
+					sendLastMessage();
+					break;
+				case ErrorDetection.CHECKSUM_ERROR:
+					sendMessage(ARDUINO_PROTOCOL_ARQ);
+					break;
+					
+/*
 				case ARDUINO_MSG_START_GAME:
 					this.mServer.startGameClick();
 					break;
@@ -131,18 +141,29 @@ public class TicTacToe implements iTTTEventListener{
 				default:
 					this.mServer.buttonClick(""+value);
 					break;
+*/
 			}
+			this.sendMessage(ARDUINO_PROTOCOL_ACK);
 			this.mActivity.showDebugMessage("Received from arduino: " + value, true);
-			//Toast.makeText(this.mActivity.getApplicationContext(), "Received from arduino: " + value, Toast.LENGTH_SHORT);
 			break;
 		default:
 			//FIXME error happened handling messages
 			break;
 		}
 	}
-	
-	protected void developmentSendMessage(int number){
+
+	private void sendLastMessage(){
+		//FIXME add a counter 
+		this.sendMessage(lastMessage);
+	}
+
+	private void sendMessage(int number){
 		this.mArduinoS.write(number);
 	}
-		
+	
+	protected void developmentSendMessage(int number){
+		this.sendMessage(number);
+	}
+	
+	
 }

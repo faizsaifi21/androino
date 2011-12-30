@@ -157,7 +157,6 @@ public class FSKDecoder extends Thread {
 	}
 	
 	private void decodeFSK(byte[] audioData) {
-		//TODO validate message integrity 
 		double[] sound = byte2double(audioData);
 		
 		Log.d(TAG, "decodeFSK: bytes length=" + audioData.length);
@@ -165,16 +164,17 @@ public class FSKDecoder extends Thread {
 		try {
 			int message = FSKModule.decodeSound(sound);
 			Log.w(TAG, "decodeFSK():message=" + message + ":" + Integer.toBinaryString(message));
-			if (message >0)
+			//validate message integrity 
+			message = ErrorDetection.decodeMessage(message);
+			Log.w(TAG, "decodeFSK():message number=" + message + ":" + Integer.toBinaryString(message));
 			this.mClientHandler.obtainMessage(ArduinoService.HANDLER_MESSAGE_FROM_ARDUINO, message, 0).sendToTarget();
 		} 
 		catch (AndroinoException ae){
-			//this.debugAndroinoException(ae);
-			Log.e(TAG, "decodeFSK:Androino ERROR="+ ae.getMessage());
+			Log.e(TAG, "decodeFSK():Androino ERROR="+ ae.getMessage());
 			this.mClientHandler.obtainMessage(ArduinoService.HANDLER_MESSAGE_FROM_ARDUINO, ae.getType(), 0).sendToTarget();
 		}
 		catch (Exception e) {
-			Log.e(TAG, "decodeFSK:ERROR="+ e.getMessage(), e);
+			Log.e(TAG, "decodeFSK():ERROR="+ e.getMessage(), e);
 			this.mClientHandler.obtainMessage(ArduinoService.HANDLER_MESSAGE_FROM_ARDUINO, -2, 0).sendToTarget();
 		}
 	}

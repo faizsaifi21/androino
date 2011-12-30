@@ -124,10 +124,12 @@ public class ArduinoService implements Runnable {
 				AudioFormat.ENCODING_PCM_16BIT, AUDIO_BUFFER_SIZE,
 				AudioTrack.MODE_STREAM);
 		aT.play();
-
+		//error detection encoding 
+		Log.i(TAG, "encodeMessage() value=" + value);
+		value = ErrorDetection.createMessage(value);
+		Log.i(TAG, "encodeMessage() message=" + value);
 		// sound encoding
 		double[] sound = FSKModule.encode(value);
-		Log.i(TAG, "encodeMessage() message=" + value);
 		ByteBuffer buf = ByteBuffer.allocate(4 * sound.length);
 		buf.order(ByteOrder.LITTLE_ENDIAN);
 		for (int i = 0; i < sound.length; i++) {
