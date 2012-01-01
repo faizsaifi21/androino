@@ -86,7 +86,7 @@ public class TicTacToe implements iTTTEventListener{
 	
 	@Override
 	public void eventReceived(TTTEvent event) {
-		Log.w(TAG, "eventReceived(): type=" + event.getType()+ " message=" + event.getMessage());
+		Log.w(TAG, "tic-tac-toe:eventReceived(): type=" + event.getType()+ " message=" + event.getMessage());
 		int value = Integer.parseInt(event.getMessage());
 		this.mHandler.obtainMessage(HANDLER_MESSAGE_FROM_SERVER, value, event.getType()).sendToTarget();
 	}
@@ -95,7 +95,7 @@ public class TicTacToe implements iTTTEventListener{
 		int target = msg.what;
 		int value = msg.arg1;
 		int type = msg.arg2;
-		Log.w(TAG, "messageReceived(): target=" + target + " value=" + value + " type=" + type);
+		Log.w(TAG, "tic-tac-toe:messageReceived(): target=" + target + " value=" + value + " type=" + type);
 		
 		switch (target) {
 		case HANDLER_MESSAGE_FROM_SERVER:
@@ -116,6 +116,7 @@ public class TicTacToe implements iTTTEventListener{
 					break;
 			}
 			this.mActivity.showDebugMessage("Received from server()=" + msgCode, false);
+			Log.i(TAG, "tic-tac-toe:messageReceived() from server value=" + msgCode);
 			this.lastMessage = msgCode;
 			//this.sendMessage(msgCode);
 			break;
@@ -142,9 +143,13 @@ public class TicTacToe implements iTTTEventListener{
 					this.mServer.buttonClick(""+value);
 					break;
 */
+				default:
+					Log.i(TAG, "tic-tac-toe:messageReceived() ACK send");
+					this.sendMessage(ARDUINO_PROTOCOL_ACK);
+					break;
 			}
-			this.sendMessage(ARDUINO_PROTOCOL_ACK);
 			this.mActivity.showDebugMessage("Received from arduino: " + value, true);
+			Log.i(TAG, "tic-tac-toe:messageReceived() from arduino value=" + value);
 			break;
 		default:
 			//FIXME error happened handling messages
@@ -153,11 +158,13 @@ public class TicTacToe implements iTTTEventListener{
 	}
 
 	private void sendLastMessage(){
-		//FIXME add a counter 
+		//FIXME add a counter
+		Log.i(TAG, "tic-tac-toe:sendLastMessage() value=" + lastMessage);
 		this.sendMessage(lastMessage);
 	}
 
 	private void sendMessage(int number){
+		Log.i(TAG, "tic-tac-toe:sendMessage() number=" + number);
 		this.mArduinoS.write(number);
 	}
 	
