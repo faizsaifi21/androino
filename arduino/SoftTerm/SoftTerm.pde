@@ -22,13 +22,19 @@
 #define MESSAGE_CHECKSUM_ERROR      -2
 #define PARITY_EVEN                 64
 #define PARITY_ODD                  32
+#define RETRY_MESSAGE_INTERVAL    2000 //ms
 
 int lastMessageSent = -1;
+long lastMessageTime = -1;
+boolean lastMessageAckReceived = true;
+
 SoftModem modem; //create an instance of SoftModem 
 
 void setup () 
 { 
   Serial.begin (115200); //permite 315bps en emision y recepcion
+  Serial.println("Androino SoftTerm: Enter one character: [0,1,2,9,:,;,<,=,>,?,@,A,B,C,...,O]");
+  Serial.println("D= repeat, E=ACK code");
   modem.begin (); // setup () call to begin with 
 }  
 
@@ -49,10 +55,11 @@ void loop ()
       int c = Serial.read();
       Serial.print("Sending character:"); Serial.print(c, DEC); Serial.print(":"); Serial.println(c, BIN);
       //modem.write(c);
-      sendMessage(c-48); // 48=0, 49=1
+      sendMessage(c-48, true); // 48=0, 49=1
     }
    }
-   // 
+   // send message again if no ACK is received
+   reSendMessageLoop();
 }
 
 //-----------------------------------------
@@ -60,13 +67,16 @@ void loop ()
 // http://en.wikipedia.org/wiki/Error_detection_and_correction
 //-----------------------------------------
 
-void sendMessage(int number){
+void sendMessage(int number, boolean persistent){
   // encodes and sends the message to the modem
   // number must [0,16]
   int msg = encodeMessage(number);
   modem.write(msg);
-  lastMessageSent = msg;
-  // TODO: ACK register timestamp and resend the message if no ACK is received
+  if (persistent) {
+    lastMessageSent = number;
+    lastMessageTime = millis();
+    lastMessageAckReceived = false;
+  }
 }
 
 int encodeMessage(int number){
@@ -121,21 +131,31 @@ int messageReceived(int message){
   switch (number) {
     case MESSAGE_CHECKSUM_ERROR:
       // reception error, ask for a repetition of the message
-      sendMessage(CODE_REPEAT_LAST_MESSAGE);
+      sendMessage(CODE_REPEAT_LAST_MESSAGE, false);
       lastMessageSent = last;
       number = -1;
       break;
     case CODE_REPEAT_LAST_MESSAGE:
       // repetition required
-      modem.write(lastMessageSent);
+      sendMessage(lastMessageSent, true);
       number = -1;
       break;
     case CODE_ACK_MESSAGE:
-      // TODO: implement ACK
+      lastMessageAckReceived = true;
       number = -1;
       break;
   }
   return number;
 }
 
+void reSendMessageLoop(){
+  // after retry interval, if no ack is received the last msg is sent again
+  if (!lastMessageAckReceived) {
+    long time = millis();
+    if ( (time-lastMessageTime) > RETRY_MESSAGE_INTERVAL ) {
+      // retry send message
+      sendMessage(lastMessageSent, true);  
+    }
+  }
+}
 
