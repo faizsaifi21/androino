@@ -1,4 +1,18 @@
-// LED multiplexing
+/*		
+* Copyright (C) 2011 Androino authors		
+*		
+* Licensed under the Apache License, Version 2.0 (the "License");		
+* you may not use this file except in compliance with the License.		
+* You may obtain a copy of the License at		
+*		
+*      http://www.apache.org/licenses/LICENSE-2.0		
+*		
+* Unless required by applicable law or agreed to in writing, software		
+* distributed under the License is distributed on an "AS IS" BASIS,		
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.		
+* See the License for the specific language governing permissions and		
+* limitations under the License.		
+*/
 
 #include <SoftModem.h>
 #include <ctype.h> 
@@ -7,10 +21,32 @@ SoftModem modem;
 #define LEDTime 1
 
 
+#define CODE_REPEAT_LAST_MESSAGE    20
+#define CODE_ACK_MESSAGE            21
+#define MESSAGE_CHECKSUM_ERROR      -2
+#define PARITY_EVEN                 64
+#define PARITY_ODD                  32
+#define RETRY_MESSAGE_INTERVAL    2000 //ms
+
+int lastMessageSent = -1;
+long lastMessageTime = -1;
+boolean lastMessageAckReceived = true;
+
+
+#define BUTTON_CLICK_1          1
+#define BUTTON_CLICK_2          2
+#define BUTTON_CLICK_3          3
+#define BUTTON_CLICK_4          4
+#define BUTTON_CLICK_5          5
+#define BUTTON_CLICK_6          6
+#define BUTTON_CLICK_7          7
+#define BUTTON_CLICK_8          8
+#define BUTTON_CLICK_9          9
+
 word num=0;
 word ButtonPressed=0;
 int RedLEDPins[] = {
-  5,4,2};
+  4,3,2};
 int GreenLEDPins[] = {
   11,12,13};
 int CathodePins[] = {
@@ -21,6 +57,8 @@ int AIN[]={
 void setup()
 {
   Serial.begin(115200);
+  Serial.println("Androino Tic-tac-toe");
+
   //  modem.begin();
   for (int i=0;i<3;i++)
   {
@@ -159,7 +197,7 @@ word checkWinner(word GridOnOff, word GridColour, boolean Turn)
 
 
   word winArray[] = {
-    7, 56, 73, 84, 146, 273, 292, 448                                                };  
+    7, 56, 73, 84, 146, 273, 292, 448                                                  };  
 
   if (Turn)        // red's turn, check for green
   {
@@ -218,80 +256,63 @@ void sending(word ButtonPressed)
   //  modem.write(ButtonPressed); -> 64=@
 
   Serial.println(ButtonPressed);
- if(ButtonPressed==1)
+  if(ButtonPressed==1)
   {
-    modem.write(49);
+    sendMessage(BUTTON_CLICK_1,true);
+
   }
   else if(ButtonPressed==2)
   {
-    modem.write(52);
+    sendMessage(BUTTON_CLICK_2,true);
   }
-    else if(ButtonPressed==4)
+  else if(ButtonPressed==4)
   {
-    modem.write(55);
+    sendMessage(BUTTON_CLICK_3,true);
   }
   else if(ButtonPressed==8)
   {
-    modem.write(50);
+    sendMessage(BUTTON_CLICK_4,true);
   }
-    else if(ButtonPressed==16)
+  else if(ButtonPressed==16)
   {
-    modem.write(53);
+    sendMessage(BUTTON_CLICK_5,true);
   }
   else if(ButtonPressed==32)
   {
-    modem.write(56);
+    sendMessage(BUTTON_CLICK_6,true);
   }
-    else if(ButtonPressed==64)
+  else if(ButtonPressed==64)
   {
-    modem.write(51);
+    sendMessage(BUTTON_CLICK_7,true);
   }
   else if(ButtonPressed==128)
   {
-    modem.write(54);
+    sendMessage(BUTTON_CLICK_8,true);
   }
-    else if(ButtonPressed==256)
+  else if(ButtonPressed==256)
   {
-    modem.write(57);
+    sendMessage(BUTTON_CLICK_9,true);
   }
-//  int b100;
-//  int m1;
-//  int b1;
-//  int m01;
-//  int b10;
-//  int u;
-//  u=ButtonPressed;
-//  b100=u/100;
-//  m1=u%100;
-//  b10=m1/10;
-//  m01=m1%10;
-//  b1=m01;
-//  modem.write(b100+48);
-//  modem.write(b10+48);
-//  modem.write(b1+48);
-//  modem.write(32);
-//  modem.write(32);
-
-
 
   delay(100);
 }
 
 
-
-
 void loop()
 {
 
-byte NoOfTurns = 0;
-word LedOnOff = 0;
-word LedColour = 0;
-boolean Turn = 1;  
-word WinCondition=0;
+  byte NoOfTurns = 0;
+  word LedOnOff = 0;
+  word LedColour = 0;
+  //boolean Turn=1;
+  boolean Turn=WhoStarts();
+  word WinCondition=0;
 
 
   while (1)
   {
+    // send message again if no ACK is received
+    reSendMessageLoop();
 
     if ((WinCondition == 0) && (NoOfTurns < 9))
     {
@@ -308,7 +329,7 @@ word WinCondition=0;
         if( ButtonPressed & ~LedOnOff)   // if an empty space is selected
         { 
           LedOnOff = LedOnOff | ButtonPressed;
-          Turn = !Turn;  //-> Escribir evento del turno y envio al server
+          Turn = !Turn;  
           NoOfTurns+=1;
           WinCondition=checkWinner(LedOnOff, LedColour, Turn);  
         }
@@ -324,39 +345,46 @@ word WinCondition=0;
         word a=0;
         while (modem. available ())// check that data received from phone
         {
-          Serial.println("modem available");
           c = modem. read (); 
-          switch(c){
-          case 'c': 
-            a=1; 
-            break;
-          case 'f': 
-            a=2; 
-            break;
-          case 'i': 
-            a=4; 
-            break;
-          case 'b': 
-            a=8; 
-            break;
-          case 'e': 
-            a=16; 
-            break;
-          case 'h': 
-            a=32; 
-            break;
-          case 'a': 
-            a=64; 
-            break;
-          case 'd': 
-            a=128; 
-            break;
-          case 'g': 
-            a=256; 
-            break;
-
-
+          Serial.print("modem available:"); 
+          Serial.print(c,DEC); 
+          Serial.print(":");
+          Serial.println(c,BIN);
+          int msg = c;
+          int number = messageReceived(msg); 
+          Serial.print("decoded:"); Serial.print(number,DEC); Serial.print(":");Serial.println(number,BIN);
+          if (number>-1) {
+            switch(number){
+            case 0:
+              a=1;
+              break;
+            case 1:
+              a=2;
+              break;
+            case 2:
+              a=4;
+              break;
+            case 3:
+              a=8;
+              break;
+            case 4:
+              a=16;
+              break;
+            case 5:
+              a=32;
+              break;
+            case 6:
+              a=64;
+              break;
+            case 7:
+              a=128;
+              break;
+            case 8:
+              a=256;
+              break;           
+            }
           }
+
         }
         if( a & ~LedOnOff)   // if an empty space is selected
         {
@@ -366,14 +394,14 @@ word WinCondition=0;
 
 
 
-          Turn = !Turn;  //-> Escribir evento del turno y envio al server
+          Turn = !Turn;  
           NoOfTurns+=1;
 
           WinCondition=checkWinner(LedOnOff, LedColour, Turn);   
         }   
 
 
-        //  <- Recepcion del evento de que ha hecho su movimiento. 
+
 
         lightLED(LedOnOff,LedColour);    // light up the LED    
 
@@ -381,77 +409,17 @@ word WinCondition=0;
       }
     }  
 
-  else {break;}
+    else {
+      break;
+    }
   }
 
 
-
-  //  do
-  //  {
-  //    ButtonPressed=readButton();   // take a reading
-  //    // Serial.println(play);
-  //
-  //    if(ButtonPressed>0)
-  //    {
-  //      sending(ButtonPressed);
-  //    }
-  //
-  //    if( ButtonPressed & ~LedOnOff)   // if an empty space is selected
-  //    { 
-  //      LedOnOff = LedOnOff | ButtonPressed;  // light up the space
-  //      //-> Envio del movimiento realizado.
-  //      //
-  //      if (Turn)                         // set colour according to whose turn it is
-  //      {
-  //        do
-  //        {
-  //
-  //          Serial.println("turno Rojo");
-  //          word c=0;
-  //          word a=0;
-  //          while (modem. available ())// check that data received from phone
-  //          {
-  //            Serial.println("modem available");
-  //            c = modem. read (); 
-  //            a = c-48;// 1byte Reed 
-  //            Serial.println(a);
-  //            if (isprint (c)) { 
-  //              Serial.print("a");
-  //              Serial.println(a);
-  //
-  //
-  //            } 
-  //            else { 
-  //              Serial.print ("Character Unkown:");
-  //              Serial.print ("("); //printable characters is displayed in Hex 
-  //              Serial.print (c, HEX); 
-  //              Serial.print (")"); 
-  //            } 
-  //          } 
-  //          LedColour = LedColour | a;
-  //          Serial.println("LedColour");
-  //          Serial.println(LedColour);
-  //        }
-  //        while(modem. available ()==0);
-  //
-  //
-  //        Turn = !Turn;  //-> Escribir evento del turno y envio al server
-  //        NoOfTurns+=1;
-  //
-  //        WinCondition=checkWinner(LedOnOff, LedColour, Turn);      
-  //      }
-  //
-  //      //  <- Recepcion del evento de que ha hecho su movimiento. 
-  //
-  //      lightLED(LedOnOff,LedColour);    // light up the LED    
-  //
-  //    }
-  //  }  
-  //  while ((WinCondition == 0) && (NoOfTurns < 9));
-
-
+  
   if (WinCondition > 0)              // did anybody win?
   {
+    
+  
     displayWin(WinCondition, Turn);  
 
   } 
@@ -484,6 +452,181 @@ word WinCondition=0;
 
 
 
+//-----------------------------------------
+// ERROR DETECTION
+// http://en.wikipedia.org/wiki/Error_detection_and_correction
+//-----------------------------------------
+
+void sendMessage(int number, boolean persistent){
+  // encodes and sends the message to the modem
+  // number must [0,16]
+  int msg = encodeMessage(number);
+  modem.write(msg);
+  if (persistent) {
+    lastMessageSent = number;
+    lastMessageTime = millis();
+    lastMessageAckReceived = false;
+  }
+}
+
+int encodeMessage(int number){
+  // adds the checksum
+  // Example: 3 (000.00011) => (101.00011)
+  int cSum = checkSum(number);
+  int msg = number + cSum;
+  Serial.print("     encodeMessage:number="); 
+  Serial.print(number, DEC); 
+  Serial.print(":"); 
+  Serial.println(number, BIN);
+  Serial.print("     encodeMessage:chk="); 
+  Serial.print(cSum, DEC); 
+  Serial.print(":"); 
+  Serial.println(cSum, BIN);
+  Serial.print("     encodeMessage:message="); 
+  Serial.print(msg, DEC); 
+  Serial.print(":"); 
+  Serial.println(msg, BIN);
+  return msg;
+}
+
+int checkSum(int number){
+  // calculates the checkSum for error correction
+  // simple implementation even => 010, odd =>001
+  int sign = 1;
+  for (int i=0; i < 5; i++){
+    int b = bitRead(number, i);
+    if (b==1){
+      sign = sign * (-1);
+    }
+  }
+  if (sign>0)
+    return PARITY_EVEN;
+  else 
+    return PARITY_ODD; 
+}
+
+int decodeMessage(int message){
+  // Message format: 111.11111 (3bits=checksum 5bits=information)
+  int number = B00011111 & message; //extract number from message 
+  int chk =    B11100000 & message;  //extract checksum from message
+  int cSum = checkSum(number);
+  Serial.print("     decodeMessage:"); 
+  Serial.print(message, DEC); 
+  Serial.print(":"); 
+  Serial.println(message, BIN);
+  Serial.print("     number="); 
+  Serial.print(number, DEC); 
+  Serial.print(":"); 
+  Serial.println(number, BIN);
+  Serial.print("     chk="); 
+  Serial.print(chk, DEC); 
+  Serial.print(":"); 
+  Serial.println(chk, BIN);
+  Serial.print("     cSum="); 
+  Serial.print(cSum, DEC); 
+  Serial.print(":"); 
+  Serial.println(cSum, BIN);
+
+  if ( chk != cSum) {
+    return MESSAGE_CHECKSUM_ERROR; // erroneus message received
+  } 
+  else
+    return number;
+}
+
+int messageReceived(int message){
+  // process the received messages, if transmission error ask for a repetition
+  // if info received returns a positive number oherwise a negative number is returned
+
+  int number = decodeMessage(message);
+  int last = lastMessageSent;
+  switch (number) {
+  case MESSAGE_CHECKSUM_ERROR:
+    // reception error, ask for a repetition of the message
+    sendMessage(CODE_REPEAT_LAST_MESSAGE, false);
+    lastMessageSent = last;
+    number = -1;
+    break;
+  case CODE_REPEAT_LAST_MESSAGE:
+    // repetition required
+    sendMessage(lastMessageSent, true);
+    number = -1;
+    break;
+  case CODE_ACK_MESSAGE:
+    lastMessageAckReceived = true;
+    number = -1;
+    break;
+  }
+  return number;
+}
+
+void reSendMessageLoop(){
+  // after retry interval, if no ack is received the last msg is sent again
+  if (!lastMessageAckReceived) {
+    long time = millis();
+    if ( (time-lastMessageTime) > RETRY_MESSAGE_INTERVAL ) {
+      // retry send message
+      sendMessage(lastMessageSent, true);  
+    }
+  }
+}
+
+
+
+
+
+boolean WhoStarts()
+{
+  boolean Turn;
+  
+  int oppnumber;
+  
+    
+    int mynumber=random(24, 29);
+    
+    while (modem. available ())// check that data received from phone
+          {
+            int opponent;
+            do{
+              
+              word c = modem. read (); 
+              Serial.print("modem available:"); 
+              Serial.print(c,DEC); 
+              Serial.print(":");
+              Serial.println(c,BIN);
+              opponent = c;
+              oppnumber = messageReceived(opponent); 
+            }while(opponent>24&&opponent<29);
+          }
+    
+    sendMessage(mynumber,true);   
+  
+    if(mynumber>oppnumber)
+    {
+      Serial.print("mynumber");      Serial.print(mynumber);      Serial.print(">oppnumber");      Serial.print(oppnumber);
+      Turn=0;
+     
+      for (int i=0;i<20;i++)      // blinking waiting for your first movement
+      {
+  
+        lightLED(511,0);
+        delay(100);
+      } 
+    }
+    else if(mynumber<oppnumber)
+    {
+      Serial.print("mynumber");      Serial.print(mynumber);      Serial.print(">oppnumber");      Serial.print(oppnumber);
+      Turn=1;
+     
+      for (int i=0;i<20;i++)      // lights your colour waitting for the first movement of your opponent
+      {
+        lightLED(511,0);
+        
+      }
+    }
+ 
+  return Turn;
+}
 
 
 
