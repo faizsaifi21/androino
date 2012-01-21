@@ -79,9 +79,9 @@ public class TicTacToe implements iTTTEventListener{
 		new Thread(this.mArduinoS).start();
 		// CONNECT to the TTT Server
 		// DEVELOPMENT:SERVERDISABLED	
-		//this.mServer = TTTServer.getInstance();
-		//this.mServer.registerEventListener(this);
-		//this.mServer.start();
+		this.mServer = TTTServer.getInstance();
+		this.mServer.registerEventListener(this);
+		this.mServer.start();
 	}
 	
 	@Override
@@ -103,7 +103,10 @@ public class TicTacToe implements iTTTEventListener{
 			switch (type) {
 				case TTTEvent.TYPE_BUTTON_CLICK:
 					msgCode = value;
+					this.lastMessage = msgCode;
+					this.sendMessage(msgCode);
 					break;
+/*
 				case TTTEvent.TYPE_STARTGAME_CLICK:
 					msgCode = ARDUINO_MSG_START_GAME;
 					break;
@@ -112,12 +115,13 @@ public class TicTacToe implements iTTTEventListener{
 						msgCode = ARDUINO_MSG_END_GAME_WINNER;
 					else 
 						msgCode = ARDUINO_MSG_END_GAME_LOSER;
+*/
 				default:
 					break;
 			}
 			this.mActivity.showDebugMessage("Received from server()=" + msgCode, false);
 			Log.i(TAG, "tic-tac-toe:messageReceived() from server value=" + msgCode);
-			this.lastMessage = msgCode;
+			//this.lastMessage = msgCode;
 			//this.sendMessage(msgCode);
 			break;
 		case ArduinoService.HANDLER_MESSAGE_FROM_ARDUINO:
@@ -144,6 +148,7 @@ public class TicTacToe implements iTTTEventListener{
 					break;
 */
 				default:
+					this.mServer.buttonClick(""+value);
 					Log.i(TAG, "tic-tac-toe:messageReceived() ACK send");
 					this.sendMessage(ARDUINO_PROTOCOL_ACK);
 					break;
