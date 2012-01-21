@@ -1,18 +1,20 @@
 /*		
-* Copyright (C) 2011 Androino authors		
-*		
-* Licensed under the Apache License, Version 2.0 (the "License");		
-* you may not use this file except in compliance with the License.		
-* You may obtain a copy of the License at		
-*		
-*      http://www.apache.org/licenses/LICENSE-2.0		
-*		
-* Unless required by applicable law or agreed to in writing, software		
-* distributed under the License is distributed on an "AS IS" BASIS,		
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.		
-* See the License for the specific language governing permissions and		
-* limitations under the License.		
-*/
+ * Copyright (C) 2011 Androino authors		
+ *		
+ * Licensed under the Apache License, Version 2.0 (the "License");		
+ * you may not use this file except in compliance with the License.		
+ * You may obtain a copy of the License at		
+ *		
+ *      http://www.apache.org/licenses/LICENSE-2.0		
+ *		
+ * Unless required by applicable law or agreed to in writing, software		
+ * distributed under the License is distributed on an "AS IS" BASIS,		
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.		
+ * See the License for the specific language governing permissions and		
+ * limitations under the License.		
+ */
+
+// LED multiplexing
 
 #include <SoftModem.h>
 #include <ctype.h> 
@@ -20,6 +22,9 @@ SoftModem modem;
 
 #define LEDTime 1
 
+#define A0 0
+#define A1 1
+#define A2 2
 
 #define CODE_REPEAT_LAST_MESSAGE    20
 #define CODE_ACK_MESSAGE            21
@@ -43,6 +48,11 @@ boolean lastMessageAckReceived = true;
 #define BUTTON_CLICK_8          8
 #define BUTTON_CLICK_9          9
 
+#define HANDSHAKE_START_MIN    24
+#define HANDSHAKE_START_MAX    30
+
+
+
 word num=0;
 word ButtonPressed=0;
 int RedLEDPins[] = {
@@ -60,11 +70,13 @@ void setup()
   Serial.println("Androino Tic-tac-toe");
 
   //  modem.begin();
-  for (int i=0;i<3;i++)
+  for (int i=0;i<4;i++)
   {
     pinMode(AIN[i],INPUT);
     //digitalWrite(AIN[i],LOW);
   }
+  // initalize random generator
+  randomSeed(analogRead(3));
   modem.begin ();
 }
 
@@ -197,7 +209,7 @@ word checkWinner(word GridOnOff, word GridColour, boolean Turn)
 
 
   word winArray[] = {
-    7, 56, 73, 84, 146, 273, 292, 448                                                  };  
+    7, 56, 73, 84, 146, 273, 292, 448                                                                      };  
 
   if (Turn)        // red's turn, check for green
   {
@@ -305,7 +317,7 @@ void loop()
   word LedOnOff = 0;
   word LedColour = 0;
   //boolean Turn=1;
-  boolean Turn=WhoStarts();
+  boolean Turn=startHandshake(); // this call blocks until negotiation is completed
   word WinCondition=0;
 
 
@@ -352,7 +364,10 @@ void loop()
           Serial.println(c,BIN);
           int msg = c;
           int number = messageReceived(msg); 
-          Serial.print("decoded:"); Serial.print(number,DEC); Serial.print(":");Serial.println(number,BIN);
+          Serial.print("decoded:"); 
+          Serial.print(number,DEC); 
+          Serial.print(":");
+          Serial.println(number,BIN);
           if (number>-1) {
             switch(number){
             case 0:
@@ -415,11 +430,11 @@ void loop()
   }
 
 
-  
+
   if (WinCondition > 0)              // did anybody win?
   {
-    
-  
+
+
     displayWin(WinCondition, Turn);  
 
   } 
@@ -572,63 +587,63 @@ void reSendMessageLoop(){
 }
 
 
+boolean startHandshake(){
+  // algorithm explained:
+  // I generated a number and wait to receive my opponent number
+  // if bigger => I start and send the max number
+  // if smaller => My opponenet stars and I send the min number
+  // if equals regenerate my number and repeat handshake
 
-
-
-boolean WhoStarts()
-{
-  boolean Turn;
-  
-  int oppnumber;
-  
-    
-    int mynumber=random(24, 29);
-    
-    while (modem. available ())// check that data received from phone
-          {
-            int opponent;
-            do{
-              
-              word c = modem. read (); 
-              Serial.print("modem available:"); 
-              Serial.print(c,DEC); 
-              Serial.print(":");
-              Serial.println(c,BIN);
-              opponent = c;
-              oppnumber = messageReceived(opponent); 
-            }while(opponent>24&&opponent<29);
-          }
-    
-    sendMessage(mynumber,true);   
-  
-    if(mynumber>oppnumber)
-    {
-      Serial.print("mynumber");      Serial.print(mynumber);      Serial.print(">oppnumber");      Serial.print(oppnumber);
-      Turn=0;
-     
-      for (int i=0;i<20;i++)      // blinking waiting for your first movement
-      {
-  
-        lightLED(511,0);
-        delay(100);
-      } 
+    boolean Turn;
+  int opponentNumber = -1;
+  boolean handshake = false;
+  int myNumber=random(HANDSHAKE_START_MIN+1, HANDSHAKE_START_MAX-1);
+  Serial.print("startHandshake:n="); 
+  Serial.println(myNumber);
+  sendMessage(myNumber,true);  
+  do {
+    // send message again if no ACK is received
+    reSendMessageLoop();
+    if ( modem.available() ){
+      word c = modem.read();
+      opponentNumber = messageReceived(c); 
+      if ( opponentNumber <= HANDSHAKE_START_MIN || opponentNumber >= HANDSHAKE_START_MAX ) 
+        opponentNumber = -1; // skip non-handshaking messages
     }
-    else if(mynumber<oppnumber)
-    {
-      Serial.print("mynumber");      Serial.print(mynumber);      Serial.print(">oppnumber");      Serial.print(oppnumber);
-      Turn=1;
-     
-      for (int i=0;i<20;i++)      // lights your colour waitting for the first movement of your opponent
-      {
-        lightLED(511,0);
-        
+    if (opponentNumber>0) {
+      Serial.print("startHandshake:opponent n=");
+      Serial.println(opponentNumber);
+      // response received
+      if (myNumber > opponentNumber) { // I starts
+        sendMessage(HANDSHAKE_START_MAX, true);
+        handshake = true;
+        Turn=0;
+        for (int i=0;i<20;i++) {      // blinking waiting for your first movement
+          lightLED(511,0);
+          delay(100);
+        } 
       }
+      if (myNumber < opponentNumber) { // My opponent starts
+        sendMessage(HANDSHAKE_START_MIN, true);
+        handshake = true;
+        Turn=1;
+        for (int i=0;i<20;i++){      // lights your colour waitting for the first movement of your opponent
+          lightLED(511,0);
+        }
+      }
+      if (myNumber == opponentNumber) { // Regenerate my number
+        myNumber = random(HANDSHAKE_START_MIN+1, HANDSHAKE_START_MAX-1);
+        Serial.print("startHandshake: regenerate n=");
+        Serial.println(myNumber);
+        sendMessage(myNumber,true);  
+      }
+      opponentNumber = -1; // reset opponent number
+    } 
+    else {
+      delay(500);
     }
- 
+  } 
+  while (!handshake);
   return Turn;
 }
-
-
-
-
 
