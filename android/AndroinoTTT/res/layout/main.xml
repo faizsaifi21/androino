@@ -14,7 +14,7 @@
 <TableLayout android:id="@+id/TableLayout01" android:layout_width="wrap_content" android:layout_height="wrap_content">
 <TableRow android:id="@+id/TableRow01" android:layout_width="wrap_content" android:layout_height="wrap_content">
 <Button android:text="START/STOP" android:id="@+id/Button" android:layout_width="wrap_content" android:layout_height="wrap_content"></Button>
-<RadioButton android:text="Running" android:id="@+id/RadioButton01" android:layout_width="wrap_content" android:layout_height="wrap_content"></RadioButton>
+<RadioButton android:text="" android:enabled="false" android:id="@+id/RadioButton01" android:layout_width="wrap_content" android:layout_height="wrap_content"></RadioButton>
 </TableRow>
 
 </TableLayout>
@@ -22,12 +22,19 @@
 
 
 <TextView android:text="DEVELOPMENT OPTIONS" android:id="@+id/TextView01" android:layout_width="wrap_content" android:layout_height="wrap_content"></TextView>
-<TextView android:text="Enter number [0-32]" android:id="@+id/TextView02" android:layout_width="wrap_content" android:layout_height="wrap_content"></TextView>
+<TextView android:text="Enter number [0-31]" android:id="@+id/TextView02" android:layout_width="wrap_content" android:layout_height="wrap_content"></TextView>
 <TableLayout android:id="@+id/TableLayout01" android:layout_width="wrap_content" android:layout_height="wrap_content">
 <TableRow android:id="@+id/TableRow01" android:layout_width="wrap_content" android:layout_height="wrap_content">
-<EditText android:text="" android:width="25mm" android:id="@+id/NumberText" android:layout_width="wrap_content" 
+<EditText android:text="" android:width="15mm" android:id="@+id/NumberText" android:layout_width="wrap_content" 
 android:layout_height="wrap_content"></EditText>
-<Button android:text="SEND" android:id="@+id/SendButton" android:layout_width="wrap_content" android:layout_height="wrap_content"></Button>
+<Button android:text="2ARDUINO" android:id="@+id/SendButton" android:layout_width="wrap_content" android:layout_height="wrap_content"></Button>
+</TableRow>
+<TableRow android:id="@+id/TableRow02" android:layout_width="wrap_content" android:layout_height="wrap_content">
+<EditText android:text="" android:width="15mm" android:id="@+id/NumberText1" android:layout_width="wrap_content" 
+android:layout_height="wrap_content"></EditText>
+<Button android:text="2SERVER" android:id="@+id/SendButton1" android:layout_width="wrap_content" android:layout_height="wrap_content"></Button>
 </TableRow>
 </TableLayout>
+
+<TextView android:text="" android:id="@+id/DebugText" android:layout_width="wrap_content" android:layout_height="wrap_content"></TextView>
 </LinearLayout>

@@ -63,6 +63,20 @@ public class MainActivity extends Activity{
 				}
 			}
 		});
+		final Button send2Server = (Button) findViewById(R.id.SendButton1);
+		send2Server.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				try {
+					TextView txt = (TextView) findViewById(R.id.NumberText1);
+					int number = Integer.parseInt(""+txt.getText()); 
+					mTTT.developmentSendServerMessage(number);
+				} catch (Exception e) {
+					showDebugMessage("ERROR happened, check number format",true);
+				}
+			}
+		});
+
+	
 	}
 
 	protected void onPause() {
@@ -86,8 +100,12 @@ public class MainActivity extends Activity{
 			if (showToast){
 				Toast.makeText(this.getApplicationContext(), message, Toast.LENGTH_SHORT).show();
 			} else {
-				TextView txt = (TextView) findViewById(R.id.Text);
-				txt.setText(message);
+				TextView txt = (TextView) findViewById(R.id.DebugText);
+				String info = txt.getText().toString();
+				if (info.length()> 300)
+					info = info.substring(0, 30);
+				info = message + "\n" + info;
+				txt.setText(info);
 			}
 		} catch (Exception e) {
 			Log.e(TAG, "ERROR showDebugMessage()=" + message, e);

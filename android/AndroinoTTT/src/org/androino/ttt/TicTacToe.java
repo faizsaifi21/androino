@@ -119,7 +119,7 @@ public class TicTacToe implements iTTTEventListener{
 				default:
 					break;
 			}
-			this.mActivity.showDebugMessage("Received from server()=" + msgCode, false);
+			this.mActivity.showDebugMessage("SERVER=" + msgCode, false);
 			Log.i(TAG, "tic-tac-toe:messageReceived() from server value=" + msgCode);
 			//this.lastMessage = msgCode;
 			//this.sendMessage(msgCode);
@@ -153,7 +153,8 @@ public class TicTacToe implements iTTTEventListener{
 					this.sendMessage(ARDUINO_PROTOCOL_ACK);
 					break;
 			}
-			this.mActivity.showDebugMessage("Received from arduino: " + value, true);
+			
+			this.mActivity.showDebugMessage("ARD: " + value, false);
 			Log.i(TAG, "tic-tac-toe:messageReceived() from arduino value=" + value);
 			break;
 		default:
@@ -175,6 +176,9 @@ public class TicTacToe implements iTTTEventListener{
 	
 	protected void developmentSendMessage(int number){
 		this.sendMessage(number);
+	}
+	protected void developmentSendServerMessage(int number){
+		this.mServer.buttonClick(""+number);
 	}
 	
 	
