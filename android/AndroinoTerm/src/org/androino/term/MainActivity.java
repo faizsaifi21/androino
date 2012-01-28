@@ -59,12 +59,13 @@ public class MainActivity extends Activity {
 		RadioButton radio = (RadioButton) findViewById(R.id.RadioButton01);
 		if (radio.isChecked()){
 			// stop
-			radio.setChecked(false);
 			showDebugMessage("Service stoped", true);
-		} else 
+		} else { 
 			// start
-			radio.setChecked(true);
 			showDebugMessage("Service started", true);
+		}
+		// update UI
+		radio.setChecked(! radio.isChecked());
     }
     
     
