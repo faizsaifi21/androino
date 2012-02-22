@@ -149,9 +149,9 @@ public class FSKModule {
 		return data;
 	}
 	
-	private double[] generateTone(int frequency, double duration){
+	public static double[] generateTone(int frequency, double duration){
 		//int duration = 1; // s
-		int samplingRate = 44100; // Hz
+		int samplingRate = SAMPLING_FREQUENCY; // Hz
 		int numberOfSamples = (int)(duration * samplingRate);
 		double samplingTime = 1.0 / samplingRate;
 		samplingTime = 2* samplingTime ;
