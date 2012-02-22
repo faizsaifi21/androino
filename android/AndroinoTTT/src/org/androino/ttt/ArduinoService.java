@@ -39,7 +39,8 @@ public class ArduinoService implements Runnable {
 	private FSKDecoder mDecoder;
 	private static boolean forceStop = false;
 	public static final int HANDLER_MESSAGE_FROM_ARDUINO = 2000;
-	
+	public static final int RECORDING_ERROR = -1333;
+
 	public ArduinoService(Handler handler) {
 		this.mClientHandler = handler;
 	}
@@ -58,7 +59,7 @@ public class ArduinoService implements Runnable {
 		//dummyRecordingRun();
 	}
 	
-	public void write(int message) {
+	public synchronized void write(int message) {
 		encodeMessage(message);
 	}
 	public void stopAndClean() {
@@ -101,15 +102,18 @@ public class ArduinoService implements Runnable {
 			Log.d(TAG, "audio acq: length=" + nBytes);
 			// Log.v(TAG, "nBytes=" + nBytes);
 			if (nBytes < 0) {
-				Log.e(TAG, "read error=" + nBytes);
-				break; // error happened
+				Log.e(TAG, "audioRecordingRun() read error=" + nBytes);
+				this.mClientHandler.obtainMessage(ArduinoService.HANDLER_MESSAGE_FROM_ARDUINO, RECORDING_ERROR, 0).sendToTarget();
 			}
+			
 			this.mDecoder.addSound(audioData, nBytes);
+
 			if (this.forceStop) {
 				this.mDecoder.stopAndClean();
 				break;
 			}
 		}
+		
 		aR.stop();
 		aR.release();
 		Log.i(TAG, "STOP audio recording stoped");
