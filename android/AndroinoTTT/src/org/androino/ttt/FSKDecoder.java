@@ -29,7 +29,7 @@ public class FSKDecoder extends Thread {
 
 	
 	private boolean signalDetected = false;
-	private boolean forceStop;
+	private static boolean forceStop;
 	private Handler mClientHandler;
 	private Vector<byte[]> mSound; 
 	private static String TAG = "FSKDecoder";
@@ -61,10 +61,11 @@ public class FSKDecoder extends Thread {
 				e.printStackTrace();
 			}
 		}
+		Log.i(TAG, "STOP run()");
 
 	}
 	public synchronized void stopAndClean(){
-		Log.i(TAG, "stopAndClean()");
+		Log.i(TAG, "STOP stopAndClean()");
 		this.forceStop = true;
 	}
 	
