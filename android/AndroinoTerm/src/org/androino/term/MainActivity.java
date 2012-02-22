@@ -38,6 +38,7 @@ public class MainActivity extends Activity {
 	private ArduinoService mArduinoS;
 	private int lastMessage;
 	private int lastMessageCounter=0;
+	private int checksumErrorCounter=0;
 
 	public static final int LAST_MESSAGE_MAX_RETRY_TIMES= 5; //Number of times that last message is repeated
 
@@ -84,11 +85,11 @@ public class MainActivity extends Activity {
 		if (radio.isChecked()){
 			// stop
 			stop();
-			showDebugMessage("Service stoped", true);
+			showDebugMessage(">>Service stoped", true);
 		} else { 
 			// start
 			start();
-			showDebugMessage("Service started", true);
+			showDebugMessage(">>Service started", true);
 		}
 		// update UI
 		radio.setChecked(! radio.isChecked());
@@ -96,6 +97,7 @@ public class MainActivity extends Activity {
     
     
 	void showDebugMessage(String message, boolean showToast){
+		showToast = false;
 		try {
 			if (showToast){
 				Toast.makeText(this.getApplicationContext(), message, Toast.LENGTH_SHORT).show();
@@ -140,28 +142,42 @@ public class MainActivity extends Activity {
 	}
 
 	private void sendMessage(int number){
+		checksumErrorCounter=0;
 		this.lastMessage = number;
 		this.writeMessage(number);
 	}
 	
 	private void writeMessage(int number){
 		this.mArduinoS.write(number);
+		showDebugMessage("W:"+number, false);
 	}
 	
 	private void messageReceived(Message msg) {
 //		this.showDebugMessage("Received:"+msg.arg1, false);
 		int value = msg.arg1;
+		showDebugMessage("...." + msg.getWhen() + "Msg Received msg="+value , true);
 		switch (value) {
 		case ARDUINO_PROTOCOL_ARQ:
-			showDebugMessage("ARQ "+value, true);
+			checksumErrorCounter=0;
+			showDebugMessage("....ARQ "+value, true);
 			sendLastMessage();
 			break;
 		case ErrorDetection.CHECKSUM_ERROR:
-			writeMessage(ARDUINO_PROTOCOL_ARQ);
-			showDebugMessage("CHK ERROR "+value, true);
+			checksumErrorCounter++;
+			if (checksumErrorCounter>1){
+				writeMessage(ARDUINO_PROTOCOL_ARQ); //ARQ is two consecutive CHK ERROR received
+				showDebugMessage("....CHK ERROR "+value, true);
+				checksumErrorCounter=0;
+			} else
+				showDebugMessage("....CHK ERROR skipped"+value, true);
+			break;
+		case ArduinoService.RECORDING_ERROR:
+			checksumErrorCounter=0;
+			showDebugMessage("RECORDING ERROR "+value, false);
 			break;
 		default:
-			showDebugMessage(""+value, false);
+			checksumErrorCounter=0;
+			showDebugMessage("R:"+value, false);
 			this.writeMessage(ARDUINO_PROTOCOL_ACK);
 			break;
 		}
