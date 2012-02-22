@@ -16,8 +16,13 @@
 
 package org.androino.term;
 
+import org.androino.ttt.ArduinoService;
+import org.androino.ttt.ErrorDetection;
+
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -28,6 +33,24 @@ import android.widget.Toast;
 public class MainActivity extends Activity {
 
 	private static final String TAG = "MainActivity";
+	
+	private Handler mHandler;
+	private ArduinoService mArduinoS;
+	private int lastMessage;
+	private int lastMessageCounter=0;
+
+	public static final int LAST_MESSAGE_MAX_RETRY_TIMES= 5; //Number of times that last message is repeated
+
+	public static final int ARDUINO_PROTOCOL_ARQ		= 20; //Automatic repeat request
+	public static final int ARDUINO_PROTOCOL_ACK		= 21; //Message received acknowledgment
+	
+	public MainActivity(){
+		this.mHandler = new Handler(){
+			public void handleMessage(Message msg) {
+				messageReceived(msg);
+			}
+		};
+	}
 	
 	/** Called when the activity is first created. */
     @Override
@@ -48,6 +71,7 @@ public class MainActivity extends Activity {
 					TextView txt = (TextView) findViewById(R.id.NumberText);
 					int number = Integer.parseInt(""+txt.getText());
 					showDebugMessage("Send " + number, true);
+					sendMessage(number);
 				} catch (Exception e) {
 					showDebugMessage("ERROR happened, check number format",true);
 				}
@@ -59,9 +83,11 @@ public class MainActivity extends Activity {
 		RadioButton radio = (RadioButton) findViewById(R.id.RadioButton01);
 		if (radio.isChecked()){
 			// stop
+			stop();
 			showDebugMessage("Service stoped", true);
 		} else { 
 			// start
+			start();
 			showDebugMessage("Service started", true);
 		}
 		// update UI
@@ -86,5 +112,61 @@ public class MainActivity extends Activity {
 		}
 	}
 
+	//-----------------------------------------------
+	//
+	//-----------------------------------------------
+	public void stop(){
+		// STOP the arduino service
+		if (this.mArduinoS != null)
+			this.mArduinoS.stopAndClean();
+	}
 
+	public void start(){
+		// START the arduino service
+		this.mArduinoS = new ArduinoService(this.mHandler);
+		new Thread(this.mArduinoS).start();
+	}
+
+	private void sendLastMessage(){
+		if (lastMessageCounter> LAST_MESSAGE_MAX_RETRY_TIMES) {
+			// stop repeating last message, ERROR
+			this.showDebugMessage("ERROR sending" + this.lastMessage, false);
+			this.writeMessage(ARDUINO_PROTOCOL_ACK); // send ack to avoid ARQ
+			lastMessageCounter=0;
+		} else {
+			this.sendMessage(lastMessage);
+			lastMessageCounter++;
+		}
+	}
+
+	private void sendMessage(int number){
+		this.lastMessage = number;
+		this.writeMessage(number);
+	}
+	
+	private void writeMessage(int number){
+		this.mArduinoS.write(number);
+	}
+	
+	private void messageReceived(Message msg) {
+//		this.showDebugMessage("Received:"+msg.arg1, false);
+		int value = msg.arg1;
+		switch (value) {
+		case ARDUINO_PROTOCOL_ARQ:
+			showDebugMessage("ARQ "+value, true);
+			sendLastMessage();
+			break;
+		case ErrorDetection.CHECKSUM_ERROR:
+			writeMessage(ARDUINO_PROTOCOL_ARQ);
+			showDebugMessage("CHK ERROR "+value, true);
+			break;
+		default:
+			showDebugMessage(""+value, false);
+			this.writeMessage(ARDUINO_PROTOCOL_ACK);
+			break;
+		}
+	}
+
+	
+	
 }
