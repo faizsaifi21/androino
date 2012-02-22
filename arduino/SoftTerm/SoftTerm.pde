@@ -22,7 +22,7 @@
 #define MESSAGE_CHECKSUM_ERROR      -2
 #define PARITY_EVEN                 64
 #define PARITY_ODD                  32
-#define RETRY_MESSAGE_INTERVAL    2000 //ms
+#define RETRY_MESSAGE_INTERVAL    5000 //ms
 
 int lastMessageSent = -1;
 long lastMessageTime = -1;
