@@ -38,6 +38,9 @@ public class TicTacToe implements iTTTEventListener{
 	public static final int ARDUINO_MSG_END_GAME_LOSER 	= 12;
 	public static final int ARDUINO_PROTOCOL_ARQ		= 20; //Automatic repeat request
 	public static final int ARDUINO_PROTOCOL_ACK		= 21; //Message received acknowledgment
+
+	public static final int LAST_MESSAGE_MAX_RETRY_TIMES= 5; //Number of times that last message is repeated
+	public static final int CONSECUTIVE_CHK_ERROR_LIMIT = 1; //Number of consecutive checksum errors to send an ARQ
 	
 	public static final int HANDLER_MESSAGE_FROM_SERVER = 2001;
 
@@ -47,6 +50,8 @@ public class TicTacToe implements iTTTEventListener{
 	private TTTServer mServer;
 	private MainActivity mActivity;
 	private int lastMessage;
+	private int lastMessageCounter=0;
+	private int checksumErrorCounter=0;
 	
 	public TicTacToe(MainActivity activity){
 		this.mActivity = activity;
@@ -127,10 +132,15 @@ public class TicTacToe implements iTTTEventListener{
 		case ArduinoService.HANDLER_MESSAGE_FROM_ARDUINO:
 			switch (value) {
 				case ARDUINO_PROTOCOL_ARQ:
+					checksumErrorCounter=0;
 					sendLastMessage();
 					break;
 				case ErrorDetection.CHECKSUM_ERROR:
-					sendMessage(ARDUINO_PROTOCOL_ARQ);
+					checksumErrorCounter++;
+					if (checksumErrorCounter>CONSECUTIVE_CHK_ERROR_LIMIT){
+						checksumErrorCounter=0;
+						sendMessage(ARDUINO_PROTOCOL_ARQ);//ARQ after two consecutive CHK ERROR received
+					}
 					break;
 					
 /*
@@ -148,6 +158,7 @@ public class TicTacToe implements iTTTEventListener{
 					break;
 */
 				default:
+					checksumErrorCounter=0;
 					this.mServer.buttonClick(""+value);
 					Log.i(TAG, "tic-tac-toe:messageReceived() ACK send");
 					this.sendMessage(ARDUINO_PROTOCOL_ACK);
@@ -164,9 +175,19 @@ public class TicTacToe implements iTTTEventListener{
 	}
 
 	private void sendLastMessage(){
-		//FIXME add a counter
-		Log.i(TAG, "tic-tac-toe:sendLastMessage() value=" + lastMessage);
 		this.sendMessage(lastMessage);
+		if (lastMessageCounter> LAST_MESSAGE_MAX_RETRY_TIMES) {
+			// stop repeating last message, ERROR
+			this.mActivity.showDebugMessage("ERROR MAX RETRY msg=" + this.lastMessage, false);
+			Log.e(TAG, "tic-tac-toe:sendLastMessage() ERROR MAX RETRY value=" + lastMessage);
+			this.sendMessage(ARDUINO_PROTOCOL_ACK); // send ack to avoid ARQ
+			Log.e(TAG, "tic-tac-toe:sendLastMessage() ERROR MAX RETRY SENDING ACK instead");
+			lastMessageCounter=0;
+		} else {
+			Log.i(TAG, "tic-tac-toe:sendLastMessage() value=" + lastMessage);
+			this.sendMessage(lastMessage);
+			lastMessageCounter++;
+		}
 	}
 
 	private void sendMessage(int number){
