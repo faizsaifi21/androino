@@ -370,31 +370,31 @@ void loop()
           Serial.println(number,BIN);
           if (number>-1) {
             switch(number){
-            case 0:
+            case 1:
               a=1;
               break;
-            case 1:
+            case 2:
               a=2;
               break;
-            case 2:
+            case 3:
               a=4;
               break;
-            case 3:
+            case 4:
               a=8;
               break;
-            case 4:
+            case 5:
               a=16;
               break;
-            case 5:
+            case 6:
               a=32;
               break;
-            case 6:
+            case 7:
               a=64;
               break;
-            case 7:
+            case 8:
               a=128;
               break;
-            case 8:
+            case 9:
               a=256;
               break;           
             }
@@ -598,10 +598,12 @@ boolean startHandshake(){
   int opponentNumber = -1;
   boolean handshake = false;
   int myNumber=random(HANDSHAKE_START_MIN+1, HANDSHAKE_START_MAX-1);
+  Serial.println("------------------------------------"); 
   Serial.print("startHandshake:n="); 
   Serial.println(myNumber);
   sendMessage(myNumber,true);  
   do {
+  Serial.println("------------------------------------"); 
     // send message again if no ACK is received
     reSendMessageLoop();
     if ( modem.available() ){
@@ -618,7 +620,7 @@ boolean startHandshake(){
         sendMessage(HANDSHAKE_START_MAX, true);
         handshake = true;
         Turn=0;
-        for (int i=0;i<20;i++) {      // blinking waiting for your first movement
+        for (int i=0;i<200;i++) {      // blinking waiting for your first movement
           lightLED(511,0);
           delay(100);
         } 
@@ -627,7 +629,7 @@ boolean startHandshake(){
         sendMessage(HANDSHAKE_START_MIN, true);
         handshake = true;
         Turn=1;
-        for (int i=0;i<20;i++){      // lights your colour waitting for the first movement of your opponent
+        for (int i=0;i<400;i++){      // lights your colour waitting for the first movement of your opponent
           lightLED(511,0);
         }
       }
@@ -640,12 +642,11 @@ boolean startHandshake(){
       opponentNumber = -1; // reset opponent number
     } 
     else {
-      delay(500);
+      delay(2000);
     }
   } 
   while (!handshake);
+  Serial.print("startHandshake: end Turn="); Serial.println(Turn);
   return Turn;
 }
-
-
 
