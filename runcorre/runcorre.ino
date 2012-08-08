@@ -12,7 +12,10 @@
 #define S_RESPONSE     3
 #define S_GAME_ENDS    4
 
+#define CHALLENGE_TIMEOUT  1000
+
 int STATE = S_READY;
+unsigned long time;
 
 // the setup routine runs once when you press reset:
 void setup() {
@@ -22,17 +25,21 @@ void setup() {
 
 // the loop routine runs over and over again forever:
 void loop() {
+
+  stateMachine();
+/*
   // read the input on analog pin 0:
   int sensorValue = analogRead(A0);
   // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
   float voltage = sensorValue * (5.0 / 1023.0);
   // print out the value you read:
   Serial.println(voltage);
+*/
 }
 
 // main game state machine 
 void stateMachine(){
-  
+
   int response = 0;
   switch (STATE) {
   case S_READY:
@@ -47,6 +54,7 @@ void stateMachine(){
   case S_CHALLENGE:
     // launch challenge
     launchChallenge();
+    time = millis(); //start timeout counter
     STATE = S_RESPONSE;
     break;
   case S_RESPONSE:
@@ -78,7 +86,6 @@ void dummyTune(){
 }
 
 void launchChallenge(){
-
 }
 
 int checkResponse(){
@@ -87,10 +94,19 @@ int checkResponse(){
   // 1: ok
   // -1: timeout or failure
   int response = readUserInput();
-  return 1;
+  if (response>0) return 1;
+  if (isTimeOut) return -1;
+  return 0;
+}
+boolean isTimeOut(){
+  unsigned long t = millis();
+  long counter =  t-time; 
+  if (counter > CHALLENGE_TIMEOUT) return true;
+  else false;
 }
 
 int readUserInput(){
   // read analog inputs 
   return 1;
 }
+
