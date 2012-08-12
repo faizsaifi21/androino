@@ -14,27 +14,38 @@
 
 #define CHALLENGE_TIMEOUT  1000
 
-int STATE = S_READY;
+
+int STATE = S_READY; //initial state
+
+// internal variables
 unsigned long time;
+int challenge = 1;
+
+// pin mapping
+int inputPin = A0;
+int ALedPin = 8;
+int ABuzzerPin = 9;
+int BLedPin = 10;
+int BBuzzerPin = 11;
+
+int led = 13;
+
 
 // the setup routine runs once when you press reset:
 void setup() {
   // initialize serial communication at 9600 bits per second:
   Serial.begin(9600);
+  
+  // pin intialization
+  pinMode(ALedPin, OUTPUT);  
+  pinMode(ABuzzerPin, OUTPUT);  
+  pinMode(BLedPin, OUTPUT);  
+  pinMode(BBuzzerPin, OUTPUT);  
 }
 
 // the loop routine runs over and over again forever:
 void loop() {
-
   stateMachine();
-/*
-  // read the input on analog pin 0:
-  int sensorValue = analogRead(A0);
-  // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
-  float voltage = sensorValue * (5.0 / 1023.0);
-  // print out the value you read:
-  Serial.println(voltage);
-*/
 }
 
 // main game state machine 
@@ -81,11 +92,22 @@ void playStartGameTune(){
 void playEndGameTune(){
   dummyTune();
 }
+void playChallenge(int id){
+  dummyTune();
+  debugMessage(String( "playChallenge:" + id));
+}
 void dummyTune(){
-  delay(2*1000);
+  digitalWrite(led, HIGH);
+  delay(1000);
+  digitalWrite(led, LOW);
+  delay(1000);    
 }
 
+
 void launchChallenge(){
+  long n = random(1,3);
+  challenge = n;
+  playChallenge(challenge);
 }
 
 int checkResponse(){
@@ -93,10 +115,13 @@ int checkResponse(){
   // 0: no response
   // 1: ok
   // -1: timeout or failure
-  int response = readUserInput();
-  if (response>0) return 1;
   if (isTimeOut) return -1;
-  return 0;
+  int response = readUserInput();
+  if (response == challenge) {
+    debugMessage(String( "checkResponse:" + response));
+    return 1;
+  } else 
+    return 0;
 }
 boolean isTimeOut(){
   unsigned long t = millis();
@@ -106,7 +131,27 @@ boolean isTimeOut(){
 }
 
 int readUserInput(){
+  // returns 0(no input), 1(A button), 2(B button)
+  int userInput = 0;
   // read analog inputs 
-  return 1;
+  float meanValue = 0;
+  int nSamples = 10;
+  for (int i = 0; i < nSamples; i++)  {  
+    meanValue += analogRead(inputPin); // 0-1023
+  }
+  meanValue = meanValue/nSamples;
+  
+  if ( 100 < meanValue && meanValue < 500 ) {
+    userInput = 1;
+    debugMessage(String( "userInput:" + userInput));
+ }
+  if ( 500 < meanValue && meanValue < 900 ) {
+    userInput = 2;
+    debugMessage(String( "userInput:" + userInput));
+  }
+  return userInput;  
 }
 
+void debugMessage(String message){
+  Serial.println(message);
+}
